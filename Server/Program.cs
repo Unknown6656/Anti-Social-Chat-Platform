@@ -9,18 +9,19 @@ using System.Net.Security;
 using System.ServiceModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading;
 using System.Linq;
 using System.Text;
 using System.Net;
 using System.IO;
 using System;
-using System.Threading;
 
 namespace ASC.Server
 {
     internal static class Win32
     {
         internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
+        internal const string MUTEX = "ASC_server_" + GUID;
         internal const string NAMESPACE_URI = "http://0.0.0.0:8081";
         internal const int PORT = 8080;
 
@@ -28,6 +29,9 @@ namespace ASC.Server
 
         [DllImport("user32.dll")]
         internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr GetConsoleWindow();
     }
 
     [ServiceContract(Namespace = Win32.NAMESPACE_URI), Guid(Win32.GUID)]
@@ -61,19 +65,14 @@ namespace ASC.Server
                 WorkingDirectory = Win32.sys32,
                 FileName = $@"{Win32.sys32}\cmd.exe",
                 Verb = "runas",
-                Arguments = $@"/c ""netstat -o -n -a | find /c \""{ip}:{port}\""""",
+                Arguments = $@"/c ""netstat -o -n -a | find /c ""{ip}:{port}""""",
                 WindowStyle = ProcessWindowStyle.Hidden,
             }))
             using (StreamReader cout = nstat.StandardOutput)
             {
                 nstat.WaitForExit();
 
-                string res = cout.ReadToEnd();
-
-                if (int.TryParse(res, out int val))
-                    return val == 0;
-                else
-                    return true;
+                return int.TryParse(cout.ReadToEnd(), out int val) ? val == 0 : true;
             }
         }
 
@@ -140,30 +139,42 @@ namespace ASC.Server
 
             $"Running from '{dir}'".Info();
 
-            try
-            {
-                InstallCertificates($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
-                InstallCertificates($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
+            using (Mutex m = new Mutex(false, Win32.MUTEX))
+                try
+                {
+                    if (m.WaitOne(0, false))
+                    {
+                        InstallCertificates($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
+                        InstallCertificates($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
 
-                using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
-                using (ASCServer ws = new ASCServer(Win32.PORT))
-                    new Program().Inner(Win32.PORT, dir);
-            }
-            catch (Exception ex)
-            {
-                ex.Err();
+                        using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
+                        using (ASCServer ws = new ASCServer(Win32.PORT))
+                            new Program().Inner(Win32.PORT, dir);
+                    }
+                    else
+                        "Cannot start the server, as an other instance of this application is already running...".Warn();
+                }
+                catch (Exception ex)
+                {
+                    ex.Err();
 
-                "Application-forced shutdown ...".Err();
+                    "Application-forced shutdown ...".Err();
 
-                retcode = -1;
-            }
-            finally
-            {
-                "Server shut down".Ok();
+                    retcode = -1;
+                }
+                finally
+                {
+                    "Server shut down".Ok();
 
-                if (Debugger.IsAttached)
-                    Console.ReadKey(true);
-            }
+                    m.Close();
+
+                    if (Debugger.IsAttached | (Win32.GetConsoleWindow() != IntPtr.Zero))
+                    {
+                        "Press any key ...".Msg();
+
+                        Console.ReadKey(true);
+                    }
+                }
 
             return retcode;
         }
@@ -245,5 +256,10 @@ namespace ASC.Server
         internal static void Warn(this string str) => PrintColored(str, "WARN", ConsoleColor.Yellow);
 
         internal static void Info(this string str) => PrintColored(str, "INFO", ConsoleColor.Magenta);
+    }
+
+    internal static class Database
+    {
+
     }
 }
