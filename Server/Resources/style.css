@@ -24,6 +24,7 @@ body {
 
 #header {
     border-bottom: 1px solid #999;
+    min-height: 70px;
     top: 0px;
 }
 
@@ -39,6 +40,7 @@ body {
 
 #footer {
     border-top: 1px solid #999;
+    min-height: 30px;
     bottom: 0px;
 }
 
@@ -53,12 +55,10 @@ body {
     }
 
     #header {
-        min-height: 70px;
         height: 10%;
     }
 
     #footer {
-        min-height: 30px;
         height: 7%;
     }
 }
@@ -67,13 +67,5 @@ body {
 @media only screen and (min-width : 800px) {
     body {
         min-width: 750px;
-    }
-
-    #header {
-        height: 70px;
-    }
-
-    #footer {
-        height: 30px;
     }
 }

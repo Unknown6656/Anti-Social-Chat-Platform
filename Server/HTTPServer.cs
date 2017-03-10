@@ -78,7 +78,7 @@ namespace ASC.Server
                 ctx.Response.ContentLength64 = resp.Bytes.Length;
                 ctx.Response.OutputStream.Write(resp.Bytes, 0, resp.Bytes.Length);
 
-                $"Response sent to '{ctx.Request.RemoteEndPoint}'".Msg();
+                $"Response sent to '{ctx.Request.RemoteEndPoint}' with the status code '{ctx.Response?.StatusCode ?? 500} - {ctx.Response?.StatusDescription ?? "Internal error"}'".Msg();
             }
             catch (Exception ex)
             {

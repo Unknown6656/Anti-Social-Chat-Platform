@@ -151,25 +151,39 @@ namespace ASC.Server
                 if (sw.ElapsedMilliseconds > 30000)
                     return SendError(request, response, vars, StatusCode._500, "");
 
-            if (regex(url, @"res\~(?<res>.+)\~(?<type>.+)$", out Match m))
+            if (regex(url, @"res\~(?<res>.+)\~(?<type>[\w\-\/]+)\b?", out Match m))
             {
                 string resource = m.Groups["res"].ToString();
 
                 try
                 {
-                    using (UnmanagedMemoryStream ms = Resources.ResourceManager.GetStream(resource))
-                    {
-                        SetStatusCode(response, StatusCode._200);
+                    SetStatusCode(response, StatusCode._200);
 
-                        response.ContentType = m.Groups["type"].ToString();
+                    response.ContentType = m.Groups["type"].ToString();
 
-                        return ms.ToArray();
-                    }
+                    $"Processing resource '{resource}' with MIME-type '{response.ContentType}'...".Msg();
+
+                    foreach (Func<HTTPResponse> f in new Func<HTTPResponse>[] {
+                        () => Resources.ResourceManager.GetString(resource),
+                        () => ToArray(Resources.ResourceManager.GetStream(resource)),
+                        () => ToArray(Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}")),
+                        () => typeof(Resources).GetProperty(resource, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null) as byte[],
+                    })
+                        try
+                        {
+                            return f();
+                        }
+                        catch
+                        {
+                        }
+
+                    throw new InvalidOperationException();
                 }
-                catch (Exception)
+                catch (InvalidOperationException)
                 {
+                    $"Resource '{resource}' not found.".Warn();
 
-                    throw;
+                    return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
                 }
             }
             else
@@ -214,6 +228,19 @@ namespace ASC.Server
         }
 
         public void Dispose() => Server.Dispose();
+
+        internal static byte[] ToArray(Stream st)
+        {
+            using (st)
+            {
+                byte[] buffer = new byte[st.Length];
+
+                st.Position = 0;
+                st.Read(buffer, 0, buffer.Length);
+
+                return buffer;
+            }
+        }
 
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
     }

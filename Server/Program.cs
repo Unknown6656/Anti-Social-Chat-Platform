@@ -130,7 +130,9 @@ namespace ASC.Server
         {
             string dir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             int retcode = 0;
-
+#if DEBUG
+            AppDomain.MonitoringIsEnabled = true;
+#endif
             try
             {
                 Win32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, 3);
@@ -152,9 +154,10 @@ namespace ASC.Server
                         InstallCertificates($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
                         InstallCertificates($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
 
-                        using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
-                        using (ASCServer ws = new ASCServer(Win32.PORT, *accptconnections))
-                            new Program().Inner(Win32.PORT, dir);
+                        fixed (bool* bptr = &accptconnections)
+                            using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
+                            using (ASCServer ws = new ASCServer(Win32.PORT, bptr))
+                                new Program().Inner(Win32.PORT, dir);
                     }
                     else
                         "Cannot start the server, as an other instance of this application is already running...".Warn();
@@ -191,6 +194,7 @@ namespace ASC.Server
             {
                 "Connecting to the internal database ...".Msg();
                 $"Connected to the database with the connection ID {{{Database.Connection.ClientConnectionId}}}".Ok();
+                $"{Database.Execute("SELECT COUNT([ID]) FROM [Users]").First()[0]} registered useres have been found inside the database".Msg();
                 $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
                 accptconnections = true;
@@ -282,12 +286,26 @@ namespace ASC.Server
     {
         private static SqlConnection conn;
 
-        internal static SqlConnection Connection => conn = conn ?? new SqlConnection(@"Data Source=.\SQLEXPRESS;
-                                                                                       AttachDbFilename=database.mdf;
-                                                                                       Integrated Security=True;
-                                                                                       Connect Timeout=30;
-                                                                                       User Instance=True;
-                                                                                       MultipleActiveResultSets=True;");
+        internal static SqlConnection Connection
+        {
+            get
+            {
+                if (conn?.State != ConnectionState.Open ||
+                    conn?.State != ConnectionState.Fetching ||
+                    conn?.State != ConnectionState.Connecting)
+                {
+                    Disconnect();
+
+                    conn = new SqlConnection($@"Data Source=(LocalDB)\MSSQLLocalDB;
+                                                AttachDbFilename={Directory.GetCurrentDirectory()}\database.mdf;
+                                                Integrated Security=True;
+                                                Connect Timeout=30");
+                    conn.Open();
+                }
+
+                return conn;
+            }
+        }
 
         internal static void Disconnect()
         {
@@ -302,14 +320,14 @@ namespace ASC.Server
                 cmd.ExecuteNonQuery();
         }
 
-        internal static IEnumerator Execute(string sql)
+        internal static IEnumerable<dynamic> Execute(string sql)
         {
             using (SqlCommand cmd = new SqlCommand(sql, Connection))
-            using (var rd = cmd.ExecuteReader())
-                return rd.GetEnumerator();
+            using (SqlDataReader rd = cmd.ExecuteReader())
+                foreach (object obj in rd)
+                    yield return obj;
         }
 
         // TODO : connection stuff, query stuff etc.
     }
 }
-
