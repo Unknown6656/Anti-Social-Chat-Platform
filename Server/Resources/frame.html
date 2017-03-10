@@ -1,5 +1,9 @@
 ﻿<!DOCTYPE html>
-<!-- AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ -->
+<!--
+    AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§
+    All server variables can be accessed using the identifier between two paragraph-symbols ('§').
+    All resources which are compiled into the assembly must be accessed with 'res~____~____' (where the first ____ stands for the resource name and the second ____ for its MIME-type)
+-->
 <html lang="§lang_code§" xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta name="§lang_name§" content="§lang_code§"/>
@@ -9,15 +13,38 @@
         <meta name="description" content="§global_descr§"/>
         <meta name="robots" content="all"/>
         <meta name="rating" content="general"/>
+        <link rel="icon" href="res~favicon~image/x-icon" type="image/x-icon"/>
         <title>§global_title§</title>
         <style type="text/css">
 §style§
         </style>
     </head>
     <body>
-        Using SSL? §ssl§
+        <div id="header">
+            <table width="100%" height="100%">
+                <tr>
+                    <td width="100px" align="left">
+                        left stuff
+                    </td>
+                    <td style="width: calc(100% - 200px)" align="center">
+                        <span id="title">
+                            §global_title§
+                        </span>
+                    </td>
+                    <td width="100px" align="right">
+                        right stuff
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="main">
+            §main§
+        </div>
+        <div id="footer">
+        </div>
+        <script type="text/javascript" src="res~jquery311min~text/javascript"></script>
         <script type="text/javascript">
-§script§
+            §script§
         </script>
     </body>
 </html>

@@ -5,11 +5,14 @@ using System.Runtime.InteropServices;
 using System.ServiceModel.Security;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Data.SqlClient;
 using System.Net.Security;
 using System.ServiceModel;
+using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Net;
@@ -35,8 +38,10 @@ namespace ASC.Server
     }
 
     [ServiceContract(Namespace = Win32.NAMESPACE_URI), Guid(Win32.GUID)]
-    public class Program
+    public unsafe class Program
     {
+        private static bool accptconnections = false;
+
         public static void InstallCertificates(string path, StoreName name)
         {
             using (X509Certificate cert = X509Certificate.CreateFromCertFile(path))
@@ -148,7 +153,7 @@ namespace ASC.Server
                         InstallCertificates($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
 
                         using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
-                        using (ASCServer ws = new ASCServer(Win32.PORT))
+                        using (ASCServer ws = new ASCServer(Win32.PORT, *accptconnections))
                             new Program().Inner(Win32.PORT, dir);
                     }
                     else
@@ -182,14 +187,29 @@ namespace ASC.Server
         [OperationContract]
         internal void Inner(int port, string dir)
         {
-            $"Runninng on port {port}. Press `ESC` to exit.".Info();
+            try
+            {
+                "Connecting to the internal database ...".Msg();
+                $"Connected to the database with the connection ID {{{Database.Connection.ClientConnectionId}}}".Ok();
+                $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
-            do
-                while (!Console.KeyAvailable)
-                    ;
-            while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                accptconnections = true;
 
-            "User-forced shutdown ...".Warn();
+                do
+                    while (!Console.KeyAvailable)
+                        ;
+                while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+
+                accptconnections = false;
+
+                "User-forced shutdown ...".Warn();
+            }
+            finally
+            {
+                Database.Disconnect();
+
+                accptconnections = false;
+            }
         }
     }
 
@@ -260,6 +280,36 @@ namespace ASC.Server
 
     internal static class Database
     {
+        private static SqlConnection conn;
 
+        internal static SqlConnection Connection => conn = conn ?? new SqlConnection(@"Data Source=.\SQLEXPRESS;
+                                                                                       AttachDbFilename=database.mdf;
+                                                                                       Integrated Security=True;
+                                                                                       Connect Timeout=30;
+                                                                                       User Instance=True;
+                                                                                       MultipleActiveResultSets=True;");
+
+        internal static void Disconnect()
+        {
+            conn?.Close();
+            conn?.Dispose();
+            conn = null;
+        }
+
+        internal static void ExecuteVoid(string sql)
+        {
+            using (SqlCommand cmd = new SqlCommand(sql, Connection))
+                cmd.ExecuteNonQuery();
+        }
+
+        internal static IEnumerator Execute(string sql)
+        {
+            using (SqlCommand cmd = new SqlCommand(sql, Connection))
+            using (var rd = cmd.ExecuteReader())
+                return rd.GetEnumerator();
+        }
+
+        // TODO : connection stuff, query stuff etc.
     }
 }
+

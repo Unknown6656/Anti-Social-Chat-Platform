@@ -71,6 +71,27 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &lt;style&gt;
+        ///    span#_error {
+        ///        color: #E95E5E;
+        ///        width: 100%;
+        ///        left: auto;
+        ///        right: auto;
+        ///    }
+        ///&lt;/style&gt;
+        ///&lt;span id=&quot;_error&quot;&gt;    
+        ///    §error_code§&lt;br /&gt;    
+        ///    §error_message§&lt;br /&gt;
+        ///    §error_submessage§
+        ///&lt;/span&gt;.
+        /// </summary>
+        internal static string error {
+            get {
+                return ResourceManager.GetString("error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon favicon {
@@ -100,17 +121,45 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to /*! jQuery v3.1.1 | (c) jQuery Foundation | jquery.org/license */
+        ///!function(a,b){&quot;use strict&quot;;&quot;object&quot;==typeof module&amp;&amp;&quot;object&quot;==typeof module.exports?module.exports=a.document?b(a,!0):function(a){if(!a.document)throw new Error(&quot;jQuery requires a window with a document&quot;);return b(a)}:b(a)}(&quot;undefined&quot;!=typeof window?window:this,function(a,b){&quot;use strict&quot;;var c=[],d=a.document,e=Object.getPrototypeOf,f=c.slice,g=c.concat,h=c.push,i=c.indexOf,j={},k=j.toString,l=j.hasOwnProperty,m=l.toString,n=m.call(Object), [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string jquery311min {
+            get {
+                return ResourceManager.GetString("jquery311min", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
+        ///
+        ///@import url(&apos;https://fonts.googleapis.com/css?family=UnifrakturCook:700&apos;);
         ///
         ///* {
         ///    font-family: &apos;Segoe UI&apos;, Tahoma, Geneva, Verdana, sans-serif;
         ///    font-size: 12pt;
         ///}
         ///
-        ///body
-        ///{
+        ///body {
+        ///    background-color: #222;
+        ///    color: wheat;
         ///}
-        ///.
+        ///
+        ///#header,
+        ///#footer {
+        ///    background-color: #333;
+        ///    z-index: 6000000;
+        ///    position: fixed;
+        ///    width: 100%;
+        ///    right: 0px;
+        ///    left: 0px;
+        ///}
+        ///
+        ///#header {
+        ///    border-bottom: 1px solid #999;
+        ///    top: 0px;
+        ///}
+        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {

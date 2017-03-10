@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Diagnostics;
 using System.Reflection;
 using System.Linq;
 using System.Text;
@@ -12,9 +13,11 @@ using System;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
+using Resources = ASC.Server.Properties.Resources;
+
 namespace ASC.Server
 {
-    public sealed class ASCServer
+    public sealed unsafe class ASCServer
         : IDisposable
     {
         internal static Dictionary<string, Dictionary<string, string>> LanguagePacks { get; }
@@ -30,14 +33,18 @@ namespace ASC.Server
         internal string ServerString { get; }
         internal HTTPServer Server { get; }
 
+        private readonly bool* acceptconnections;
+
 
         static ASCServer() => LanguagePacks = (from f in Directory.GetFiles($@"{Directory.GetCurrentDirectory()}\Languages", "*.json", SearchOption.AllDirectories)
                                                let nfo = new FileInfo(f)
                                                let code = nfo.Name.Replace(nfo.Extension, "")
                                                select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
 
-        public ASCServer(int port)
+        public ASCServer(int port, bool* accept)
         {
+            acceptconnections = accept;
+
             foreach (KeyValuePair<string, Dictionary<string, string>> dic in LanguagePacks)
                 $"Language dictionary '{dic.Value["lang_name"]} ({dic.Key})' loaded.".Ok();
 
@@ -98,7 +105,6 @@ namespace ASC.Server
             const string pat_cnt = @"\§([0-9]+)";
             List<object> values = new List<object>();
             int rcount = 0;
-            Match m;
 
             obj = obj.Replace("{", "{{");
             obj = obj.Replace("}", "}}");
@@ -109,7 +115,7 @@ namespace ASC.Server
             obj = Regex.Replace(obj, pat_par, "{$1:$2}");
             obj = Regex.Replace(obj, pat_cnt, "{$1}");
 
-            while ((m = Regex.Match(obj, pat_dic)).Success)
+            while (regex(obj, pat_dic, out Match m))
             {
                 string head = obj.Substring(0, m.Index);
                 string tail = obj.Substring(m.Index + m.Length);
@@ -130,24 +136,40 @@ namespace ASC.Server
         public HTTPResponse SendResponse(HttpListenerRequest request, HttpListenerResponse response)
         {
             Dictionary<string, object> vars = new Dictionary<string, object>();
+            int port = request.LocalEndPoint.Port;
             string url = request.RawUrl;
             DateTime now = DateTime.Now;
             string lang = "en";
-            int port = request.LocalEndPoint.Port;
 
             response.Headers[HttpResponseHeader.Server] = ServerString;
 
-            if (Regex.IsMatch(url, @"[\\\/]?favicon\.ico$", RegexOptions.IgnoreCase))
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
+            while (!*acceptconnections)
+                if (sw.ElapsedMilliseconds > 30000)
+                    return SendError(request, response, vars, StatusCode._500, "");
+
+            if (regex(url, @"res\~(?<res>.+)\~(?<type>.+)$", out Match m))
             {
-                SetStatusCode(response, StatusCode._200);
+                string resource = m.Groups["res"].ToString();
 
-                response.ContentType = "image/x-icon";
-
-                using (MemoryStream ms = new MemoryStream())
+                try
                 {
-                    Properties.Resources.favicon.Save(ms);
+                    using (UnmanagedMemoryStream ms = Resources.ResourceManager.GetStream(resource))
+                    {
+                        SetStatusCode(response, StatusCode._200);
 
-                    return ms.ToArray();
+                        response.ContentType = m.Groups["type"].ToString();
+
+                        return ms.ToArray();
+                    }
+                }
+                catch (Exception)
+                {
+
+                    throw;
                 }
             }
             else
@@ -169,10 +191,20 @@ namespace ASC.Server
                 vars["port"] = port;
                 vars["ssl"] = SSL(port);
                 vars["script"] = "// script";
-                vars["style"] = FetchResource(Properties.Resources.style, vars);
+                vars["style"] = FetchResource(Resources.style, vars);
 
-                return FetchResource(Properties.Resources.frame, vars);
+                return FetchResource(Resources.frame, vars);
             }
+        }
+
+        internal HTTPResponse SendError(HttpListenerRequest request, HttpListenerResponse response, Dictionary<string, object> vars, StatusCode code, string msg = null)
+        {
+            SetStatusCode(response, code);
+
+            vars["error_message"] = msg ?? vars[$"error{code}"].ToString();
+            vars["inner"] = FetchResource(Resources.error, vars);
+
+            return FetchResource(Resources.frame, vars);
         }
 
         internal void SetStatusCode(HttpListenerResponse resp, StatusCode code)
@@ -182,6 +214,8 @@ namespace ASC.Server
         }
 
         public void Dispose() => Server.Dispose();
+
+        internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
     }
 
     internal enum StatusCode

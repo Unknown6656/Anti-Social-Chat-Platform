@@ -3,6 +3,11 @@
     "name": "English",
     "code": "en"
   },
+  "error": {
+    "500": "Service currently not available",
+    "404": "Resource not found",
+    "403": "Permission denied"
+  },
   "global": {
     "title": "Anti-Social Chat Platform",
     "descr": "This is the official anti-social chat platform"
