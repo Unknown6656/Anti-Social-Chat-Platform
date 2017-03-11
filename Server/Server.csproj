@@ -85,9 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ASCServer.cs" />
-    <Compile Include="database.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
+    <Compile Include="Database.cs">
       <DependentUpon>database.xsd</DependentUpon>
     </Compile>
     <Compile Include="HTTPServer.cs" />
@@ -105,6 +103,27 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="SQLScripts\dbo.ChatMembers.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\dbo.ChatMessages.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\dbo.Chats.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\dbo.Messages.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\CheckExistence.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\DeleteAll.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\dbo.Users.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="app.config" />
     <None Include="app.manifest" />
     <Content Include="database.mdf">
@@ -123,17 +142,6 @@
     <EmbeddedResource Include="ASC.cer">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
-    <None Include="database.xsc">
-      <DependentUpon>database.xsd</DependentUpon>
-    </None>
-    <None Include="database.xsd">
-      <SubType>Designer</SubType>
-      <Generator>MSDataSetGenerator</Generator>
-      <LastGenOutput>database.Designer.cs</LastGenOutput>
-    </None>
-    <None Include="database.xss">
-      <DependentUpon>database.xsd</DependentUpon>
-    </None>
     <None Include="packages.config" />
     <EmbeddedResource Include="Unknown6656.cer">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -172,5 +180,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

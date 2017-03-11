@@ -176,15 +176,14 @@ namespace ASC.Server
                         catch
                         {
                         }
-
-                    throw new InvalidOperationException();
                 }
-                catch (InvalidOperationException)
+                catch
                 {
-                    $"Resource '{resource}' not found.".Warn();
-
-                    return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
                 }
+
+                $"Resource '{resource}' not found.".Warn();
+
+                return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
             }
             else
             {

@@ -5,14 +5,12 @@ using System.Runtime.InteropServices;
 using System.ServiceModel.Security;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Data.SqlClient;
 using System.Net.Security;
 using System.ServiceModel;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
-using System.Data;
 using System.Linq;
 using System.Text;
 using System.Net;
@@ -21,26 +19,11 @@ using System;
 
 namespace ASC.Server
 {
-    internal static class Win32
-    {
-        internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
-        internal const string MUTEX = "ASC_server_" + GUID;
-        internal const string NAMESPACE_URI = "http://0.0.0.0:8081";
-        internal const int PORT = 8080;
-
-        internal static readonly string sys32 = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Windows)}\system32";
-
-        [DllImport("user32.dll")]
-        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        [DllImport("kernel32.dll")]
-        internal static extern IntPtr GetConsoleWindow();
-    }
-
     [ServiceContract(Namespace = Win32.NAMESPACE_URI), Guid(Win32.GUID)]
     public unsafe class Program
     {
         private static bool accptconnections = false;
+        private static Database database;
 
         public static void InstallCertificates(string path, StoreName name)
         {
@@ -190,31 +173,62 @@ namespace ASC.Server
         [OperationContract]
         internal void Inner(int port, string dir)
         {
-            try
-            {
-                "Connecting to the internal database ...".Msg();
-                $"Connected to the database with the connection ID {{{Database.Connection.ClientConnectionId}}}".Ok();
-                $"{Database.Execute("SELECT COUNT([ID]) FROM [Users]").First()[0]} registered useres have been found inside the database".Msg();
-                $"Runninng on port {port}. Press `ESC` to exit.".Info();
+            "Connecting to the internal database ...".Msg();
 
-                accptconnections = true;
+            using (database = Database.Instance)
+                try
+                {
+                    $"Connected to the database with the connection ID {{{database.Connection.ClientConnectionId}}}".Ok();
 
-                do
-                    while (!Console.KeyAvailable)
-                        ;
-                while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                    foreach (string table in new string[] { "ChatMembers", "ChatMessages", "Chats", "Messages", "Users" })
+                    {
+                        if (!database.Exists(table))
+                        {
+                            $"Table '{table}' could not be found. It will be re-created ...".Warn();
 
-                accptconnections = false;
+                            database.CreateNew(table);
+                        }
 
-                "User-forced shutdown ...".Warn();
-            }
-            finally
-            {
-                Database.Disconnect();
+                        $"Table '{table}' loaded.".Ok();
+                    }
 
-                accptconnections = false;
-            }
+                    $"{database.UserCount} registered users have been found inside the database".Msg();
+                    $"{database.MessageCount} sent messages have been found inside the database".Msg();
+                    $"{database.ChatCount} chats/groups have been found inside the database".Msg();
+                    $"Runninng on port {port}. Press `ESC` to exit.".Info();
+
+                    accptconnections = true;
+
+                    do
+                        while (!Console.KeyAvailable)
+                            ;
+                    while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+
+                    accptconnections = false;
+
+                    "User-forced shutdown ...".Warn();
+                }
+                finally
+                {
+                    accptconnections = false;
+                }
         }
+    }
+
+    internal static class Win32
+    {
+        internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
+        internal const string MUTEX = "ASC_server_" + GUID;
+        internal const string NAMESPACE_URI = "http://0.0.0.0:8081";
+        internal const int PORT = 8080;
+
+        internal static readonly string sys32 = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Windows)}\system32";
+
+        [DllImport("user32.dll")]
+        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("kernel32.dll")]
+        internal static extern IntPtr GetConsoleWindow();
     }
 
     internal static class Logger
@@ -280,54 +294,5 @@ namespace ASC.Server
         internal static void Warn(this string str) => PrintColored(str, "WARN", ConsoleColor.Yellow);
 
         internal static void Info(this string str) => PrintColored(str, "INFO", ConsoleColor.Magenta);
-    }
-
-    internal static class Database
-    {
-        private static SqlConnection conn;
-
-        internal static SqlConnection Connection
-        {
-            get
-            {
-                if (conn?.State != ConnectionState.Open ||
-                    conn?.State != ConnectionState.Fetching ||
-                    conn?.State != ConnectionState.Connecting)
-                {
-                    Disconnect();
-
-                    conn = new SqlConnection($@"Data Source=(LocalDB)\MSSQLLocalDB;
-                                                AttachDbFilename={Directory.GetCurrentDirectory()}\database.mdf;
-                                                Integrated Security=True;
-                                                Connect Timeout=30");
-                    conn.Open();
-                }
-
-                return conn;
-            }
-        }
-
-        internal static void Disconnect()
-        {
-            conn?.Close();
-            conn?.Dispose();
-            conn = null;
-        }
-
-        internal static void ExecuteVoid(string sql)
-        {
-            using (SqlCommand cmd = new SqlCommand(sql, Connection))
-                cmd.ExecuteNonQuery();
-        }
-
-        internal static IEnumerable<dynamic> Execute(string sql)
-        {
-            using (SqlCommand cmd = new SqlCommand(sql, Connection))
-            using (SqlDataReader rd = cmd.ExecuteReader())
-                foreach (object obj in rd)
-                    yield return obj;
-        }
-
-        // TODO : connection stuff, query stuff etc.
     }
 }
