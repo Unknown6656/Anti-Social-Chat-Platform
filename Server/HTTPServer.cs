@@ -10,6 +10,9 @@ using System;
 
 namespace ASC.Server
 {
+    /// <summary>
+    /// Represents an HTTP server
+    /// </summary>
     public sealed class HTTPServer
         : IDisposable
     {
@@ -17,6 +20,11 @@ namespace ASC.Server
         private readonly HttpListener _listener = new HttpListener();
 
 
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
+        /// <param name="prefixes">HTTP(S) listening prefixes</param>
+        /// <param name="func">Listening handling function</param>
         public HTTPServer(string[] prefixes, Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> func)
         {
             if (!HttpListener.IsSupported)
@@ -40,13 +48,35 @@ namespace ASC.Server
             _listener.Start();
         }
 
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
+        /// <param name="func">Listening handling function</param>
+        /// <param name="prefixes">HTTP(S) listening prefixes</param>
         public HTTPServer(Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> method, params string[] prefixes)
             : this(prefixes, method)
         {
         }
 
+        /// <summary>
+        /// Disposes the current HTTP server and releases all underlying resources
+        /// </summary>
         public void Dispose() => Stop();
 
+        /// <summary>
+        /// Stopps the current HTTP server
+        /// </summary>
+        public void Stop()
+        {
+            if (_listener?.IsListening ?? false)
+                _listener?.Stop();
+
+            _listener?.Close();
+        }
+
+        /// <summary>
+        /// Starts the current HTTP server
+        /// </summary>
         public void Start() => ThreadPool.QueueUserWorkItem(delegate
         {
             "Webserver running...".Ok();
@@ -89,21 +119,31 @@ namespace ASC.Server
                 ctx.Response.OutputStream.Close();
             }
         }
-
-        public void Stop()
-        {
-            if (_listener?.IsListening ?? false)
-                _listener?.Stop();
-
-            _listener?.Close();
-        }
     }
 
+    /// <summary>
+    /// Represents a simple http-response
+    /// </summary>
     public class HTTPResponse
     {
+        /// <summary>
+        /// The response bytes
+        /// </summary>
         public byte[] Bytes { private set; get; }
+        /// <summary>
+        /// Returns the response's length (in bytes)
+        /// </summary>
+        public int Length => Bytes?.Length ?? 0;
 
+        /// <summary>
+        /// Converts the given byte array to an HTTP-response
+        /// </summary>
+        /// <param name="bytes">Byte array</param>
         public static implicit operator HTTPResponse(byte[] bytes) => new HTTPResponse { Bytes = bytes };
+        /// <summary>
+        /// Converts the given UTF-16 string to an UTF-8 encoded HTTP-response
+        /// </summary>
+        /// <param name="text">UTF-16 strings</param>
         public static implicit operator HTTPResponse(string text) => Encoding.UTF8.GetBytes(text);
     }
 }

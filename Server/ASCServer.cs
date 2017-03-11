@@ -17,6 +17,9 @@ using Resources = ASC.Server.Properties.Resources;
 
 namespace ASC.Server
 {
+    /// <summary>
+    /// Represents an ASC-server
+    /// </summary>
     public sealed unsafe class ASCServer
         : IDisposable
     {
@@ -41,6 +44,11 @@ namespace ASC.Server
                                                let code = nfo.Name.Replace(nfo.Extension, "")
                                                select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
 
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
+        /// <param name="port">The HTTP port</param>
+        /// <param name="accept">A pointer to an boolean value, which indicates whether the server shall accept incomming requests</param>
         public ASCServer(int port, bool* accept)
         {
             acceptconnections = accept;
@@ -56,6 +64,11 @@ namespace ASC.Server
             Server.Start();
         }
 
+        /// <summary>
+        /// Builds and returns the language dictionary from the given file
+        /// </summary>
+        /// <param name="path">Language dictionary file path</param>
+        /// <returns>Language dictionary</returns>
         public static Dictionary<string, string> BuildLanguageDictionary(string path)
         {
             $"Building language dictionary for '{path}' ...".Msg();
@@ -98,6 +111,13 @@ namespace ASC.Server
             return dic;
         }
 
+        /// <summary>
+        /// Fetches the resource associated with the given object name and formats it using the given string dictionary and format parameters
+        /// </summary>
+        /// <param name="obj">Resource name</param>
+        /// <param name="variables">String table</param>
+        /// <param name="args">Format parameters</param>
+        /// <returns>Formatted resource</returns>
         public string FetchResource(string obj, Dictionary<string, object> variables, params object[] args)
         {
             const string pat_dic = @"\§(?<key>\w+)(\:(?<format>[^§]+))?\§";
@@ -133,6 +153,12 @@ namespace ASC.Server
             return string.Format(obj, args.Concat(values).ToArray());
         }
 
+        /// <summary>
+        /// Processes the given HTTP listener request and writes the processing result into the given HTTP listener response
+        /// </summary>
+        /// <param name="request">HTTP listener request</param>
+        /// <param name="response">HTTP listener response</param>
+        /// <returns>HTTP response data</returns>
         public HTTPResponse SendResponse(HttpListenerRequest request, HttpListenerResponse response)
         {
             Dictionary<string, object> vars = new Dictionary<string, object>();
@@ -226,6 +252,9 @@ namespace ASC.Server
             resp.StatusCode = (int)code;
         }
 
+        /// <summary>
+        /// Disposes the current ASC server and releases all underlying resources
+        /// </summary>
         public void Dispose() => Server.Dispose();
 
         internal static byte[] ToArray(Stream st)

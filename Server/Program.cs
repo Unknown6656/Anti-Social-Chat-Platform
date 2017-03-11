@@ -19,13 +19,21 @@ using System;
 
 namespace ASC.Server
 {
+    /// <summary>
+    /// The application's main program class
+    /// </summary>
     [ServiceContract(Namespace = Win32.NAMESPACE_URI), Guid(Win32.GUID)]
     public unsafe class Program
     {
         private static bool accptconnections = false;
         private static Database database;
 
-        public static void InstallCertificates(string path, StoreName name)
+        /// <summary>
+        /// Installs the given certificate to the given .X509-store
+        /// </summary>
+        /// <param name="path">Path to the certificate's .cer-file</param>
+        /// <param name="name">.X509 store name</param>
+        public static void InstallCertificate(string path, StoreName name)
         {
             using (X509Certificate cert = X509Certificate.CreateFromCertFile(path))
             {
@@ -44,6 +52,12 @@ namespace ASC.Server
             }
         }
 
+        /// <summary>
+        /// Returns, whether the given ip:port need any service binding
+        /// </summary>
+        /// <param name="ip">IP Address</param>
+        /// <param name="port">Port</param>
+        /// <returns>Service binding requirement</returns>
         public static bool NeedsBinding(string ip, int port)
         {
             using (Process nstat = Process.Start(new ProcessStartInfo()
@@ -64,6 +78,14 @@ namespace ASC.Server
             }
         }
 
+        /// <summary>
+        /// Binds the given certificate from the given store to the given ip:port and returns the newly created service host
+        /// </summary>
+        /// <param name="ip">IP Address</param>
+        /// <param name="port">Port</param>
+        /// <param name="store">.X509 certificate store</param>
+        /// <param name="name">.X509 certificate name</param>
+        /// <returns>Service host</returns>
         public static ServiceHost BindCertificatePort(string ip, int port, StoreName store, string name)
         {
             if (NeedsBinding(ip, port))
@@ -109,6 +131,11 @@ namespace ASC.Server
             return null;
         }
 
+        /// <summary>
+        /// The application's main entry point
+        /// </summary>
+        /// <param name="args">Command line arguments</param>
+        /// <returns>Return code</returns>
         public static int Main(string[] args)
         {
             string dir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
@@ -134,8 +161,8 @@ namespace ASC.Server
                 {
                     if (m.WaitOne(0, false))
                     {
-                        InstallCertificates($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
-                        InstallCertificates($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
+                        InstallCertificate($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
+                        InstallCertificate($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
 
                         fixed (bool* bptr = &accptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
@@ -192,9 +219,9 @@ namespace ASC.Server
                         $"Table '{table}' loaded.".Ok();
                     }
 
-                    $"{database.UserCount} registered users have been found inside the database".Msg();
-                    $"{database.MessageCount} sent messages have been found inside the database".Msg();
-                    $"{database.ChatCount} chats/groups have been found inside the database".Msg();
+                    $"{database.UserCount} registered users have been found inside the database.".Msg();
+                    $"{database.MessageCount} sent messages have been found inside the database.".Msg();
+                    $"{database.ChatCount} chats/groups have been found inside the database.".Msg();
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
                     accptconnections = true;
@@ -211,6 +238,8 @@ namespace ASC.Server
                 finally
                 {
                     accptconnections = false;
+
+                    "Disconnicting from the database ...".Msg();
                 }
         }
     }
