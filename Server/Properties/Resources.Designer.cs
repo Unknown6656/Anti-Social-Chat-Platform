@@ -103,16 +103,15 @@ namespace ASC.Server.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;!DOCTYPE html&gt;
-        ///&lt;!-- AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ --&gt;
+        ///&lt;!--
+        ///    AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§
+        ///    All server variables can be accessed using the identifier between two paragraph-symbols (&apos;§&apos;).
+        ///    All resources which are compiled into the assembly must be accessed with &apos;res~____~____&apos; (where the first ____ stands for the resource name and the second ____ for its MIME-type)
+        ///--&gt;
         ///&lt;html lang=&quot;§lang_code§&quot; xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
         ///    &lt;head&gt;
         ///        &lt;meta name=&quot;§lang_name§&quot; content=&quot;§lang_code§&quot;/&gt;
-        ///        &lt;meta charset=&quot;utf-8&quot;/&gt;
-        ///        &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot;/&gt;
-        ///        &lt;meta name=&quot;title&quot; content=&quot;§global_title§&quot;/&gt;
-        ///        &lt;meta name=&quot;description&quot; content=&quot;§global_descr§&quot;/&gt;
-        ///        &lt;meta name=&quot;robots&quot; content=&quot;all&quot;/&gt;
-        ///        &lt;meta name=&quot;rating&quot; co [rest of string was truncated]&quot;;.
+        ///        &lt;met [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string frame {
             get {
@@ -127,6 +126,27 @@ namespace ASC.Server.Properties {
         internal static string jquery311min {
             get {
                 return ResourceManager.GetString("jquery311min", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to var b;
+        ///if (!(b = t)) {
+        ///        var w = Math,
+        ///                y = {}, B = y.p = {}, aa = function () {}, C = B.A = {
+        ///                        extend: function (a) {
+        ///                                aa.prototype = this;
+        ///                                var c = new aa;
+        ///                                a &amp;&amp; c.u(a);
+        ///                                c.z = this;
+        ///                                return c
+        ///                        },
+        ///                        create: function () {
+        ///                                var a = this. [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string sha512 {
+            get {
+                return ResourceManager.GetString("sha512", resourceCulture);
             }
         }
         
@@ -157,9 +177,7 @@ namespace ASC.Server.Properties {
         ///
         ///#header {
         ///    border-bottom: 1px solid #999;
-        ///    top: 0px;
-        ///}
-        /// [rest of string was truncated]&quot;;.
+        ///    min-height: 70 [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {

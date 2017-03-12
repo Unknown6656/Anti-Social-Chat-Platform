@@ -207,7 +207,7 @@ namespace ASC.Server
                 {
                     $"Connected to the database with the connection ID {{{database.Connection.ClientConnectionId}}}".Ok();
 
-                    foreach (string table in new string[] { "ChatMembers", "ChatMessages", "Chats", "Messages", "Users" })
+                    foreach (string table in new string[] { "ChatMembers", "ChatMessages", "Chats", "Messages", "Users", "UserAuthentifications" })
                     {
                         if (!database.Exists(table))
                         {
@@ -219,12 +219,29 @@ namespace ASC.Server
                         $"Table '{table}' loaded.".Ok();
                     }
 
-                    $"{database.UserCount} registered users have been found inside the database.".Msg();
-                    $"{database.MessageCount} sent messages have been found inside the database.".Msg();
-                    $"{database.ChatCount} chats/groups have been found inside the database.".Msg();
+                    $"{database.UserCount} registered user(s) have been found inside the database.".Msg();
+                    $"{database.AdminCount} registered administrator(s) have been found inside the database.".Msg();
+                    $"{database.MessageCount} sent message(s) have been found inside the database.".Msg();
+                    $"{database.ChatCount} chat(s)/group(s) have been found inside the database.".Msg();
+
+                    Authentification.Start();
+
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
                     accptconnections = true;
+
+                    // testing
+
+                    foreach(string s in "The fields of mathematics, probability, and statistics use formal definitions of randomness. In statistics, a random variable is an assignment of a numerical value to each possible outcome of an event space. This association facilitates the identification and the calculation of probabilities of the events. Random variables can appear in random sequences. A random process is a sequence of random variables whose outcomes do not follow a deterministic pattern, but follow an evolution described by probability distributions. These and other constructs are extremely useful in probability theory and the various applications of randomness.".Split())
+                    {
+                        DBUser user = new DBUser {
+                            Name = s.Replace(",", "").Replace(".", "")
+                        };
+                        database.AddUser(ref user);
+                    }
+
+                    var match = database.FindUsers("kek");
+
 
                     do
                         while (!Console.KeyAvailable)
@@ -238,6 +255,8 @@ namespace ASC.Server
                 finally
                 {
                     accptconnections = false;
+
+                    Authentification.Stop();
 
                     "Disconnicting from the database ...".Msg();
                 }
