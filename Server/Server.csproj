@@ -105,6 +105,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\sha512.js" />
+    <Content Include="SQLScripts\dbo.Functions.Trim.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\FindUsers.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="SQLScripts\dbo.UserAuthentifications.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

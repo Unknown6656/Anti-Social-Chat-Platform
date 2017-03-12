@@ -205,6 +205,9 @@ namespace ASC.Server
             using (database = Database.Instance)
                 try
                 {
+#if DEBUG
+                    database.DebugMode = true;
+#endif
                     $"Connected to the database with the connection ID {{{database.Connection.ClientConnectionId}}}".Ok();
 
                     foreach (string table in new string[] { "ChatMembers", "ChatMessages", "Chats", "Messages", "Users", "UserAuthentifications" })
@@ -219,6 +222,18 @@ namespace ASC.Server
                         $"Table '{table}' loaded.".Ok();
                     }
 
+                    foreach (string function in new string[] { "Trim" })
+                    {
+                        if (!database.ContainsFunction(function))
+                        {
+                            $"Function '{function}' could not be found. It will be re-created ...".Warn();
+
+                            database.CreateFunction(function);
+                        }
+
+                        $"Function '{function}' loaded.".Ok();
+                    }
+
                     $"{database.UserCount} registered user(s) have been found inside the database.".Msg();
                     $"{database.AdminCount} registered administrator(s) have been found inside the database.".Msg();
                     $"{database.MessageCount} sent message(s) have been found inside the database.".Msg();
@@ -229,19 +244,6 @@ namespace ASC.Server
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
                     accptconnections = true;
-
-                    // testing
-
-                    foreach(string s in "The fields of mathematics, probability, and statistics use formal definitions of randomness. In statistics, a random variable is an assignment of a numerical value to each possible outcome of an event space. This association facilitates the identification and the calculation of probabilities of the events. Random variables can appear in random sequences. A random process is a sequence of random variables whose outcomes do not follow a deterministic pattern, but follow an evolution described by probability distributions. These and other constructs are extremely useful in probability theory and the various applications of randomness.".Split())
-                    {
-                        DBUser user = new DBUser {
-                            Name = s.Replace(",", "").Replace(".", "")
-                        };
-                        database.AddUser(ref user);
-                    }
-
-                    var match = database.FindUsers("kek");
-
 
                     do
                         while (!Console.KeyAvailable)
@@ -309,10 +311,10 @@ namespace ASC.Server
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("] ");
             Console.ForegroundColor = col;
-            Console.WriteLine(str);
+            Console.WriteLine(str ?? "");
             Console.ForegroundColor = ConsoleColor.White;
 
-            log.AppendLine($"[{now:YYYY-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str}");
+            log.AppendLine($"[{now:YYYY-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}");
         });
 
         internal static void Clear() => actions.Enqueue(() => log.Clear());
@@ -342,5 +344,7 @@ namespace ASC.Server
         internal static void Warn(this string str) => PrintColored(str, "WARN", ConsoleColor.Yellow);
 
         internal static void Info(this string str) => PrintColored(str, "INFO", ConsoleColor.Magenta);
+
+        internal static void Sql(this string str) => PrintColored(str, "tSQL", ConsoleColor.Cyan);
     }
 }

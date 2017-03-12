@@ -29,7 +29,6 @@ namespace ASC.Server
         private static Database instance;
         private bool disposed = false;
 
-
         /// <summary>
         /// Returns an instance of the currently used database
         /// </summary>
@@ -54,6 +53,10 @@ namespace ASC.Server
         /// Returns the underlying T-SQL connection
         /// </summary>
         public SqlConnection Connection => DatabaseHelper.Connection;
+        /// <summary>
+        /// Determines, whether the database is currently running in debug-mode
+        /// </summary>
+        public bool DebugMode { set; get; } = false;
 
         // TODO : connection stuff, query stuff etc.
 
@@ -114,17 +117,17 @@ namespace ASC.Server
         }
 
         /// <summary>
-        /// 
+        /// Updates the given user hash and returns, whether the operation was successful
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="hash"></param>
-        /// <returns></returns>
+        /// <param name="id">User ID</param>
+        /// <param name="hash">New SHA-512 hash</param>
+        /// <returns>Operation result</returns>
         public bool UpdateUserHash(long id, string hash)
         {
-            if (!ASCServer.regex(hash, @"^[a-fA-F0-9]+$", out _))
+            if (!ValidateHash(hash))
                 return false;
 
-            ExecuteVoid($"UPDATE {UAUTH} SET [Hash]='{hash}' WHERE [ID]={id}");
+            ExecuteVoid($"UPDATE {UAUTH} SET [Hash]='{hash.ToUpper()}' WHERE [ID]={id}");
 
             return true;
         }
@@ -141,7 +144,37 @@ namespace ASC.Server
         /// <param name="id"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public bool VerifyUser(long id, string hash) => ASCServer.regex(hash, @"^[a-fA-F0-9]+$", out _) ? Execute($"SELECT 1 FROM {UAUTH} WHERE [ID] = {id} AND [Hash] = '{hash}'").Any() : false;
+        public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute($"SELECT 1 FROM {UAUTH} WHERE [ID] = {id} AND UPPER([Hash]) = '{hash.ToUpper()}'").Any() : false;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="hash"></param>
+        /// <param name="ip"></param>
+        /// <param name="useragent"></param>
+        /// <param name="session"></param>
+        /// <returns></returns>
+        public bool Login(long id, string hash, string ip, string useragent, out string session)
+        {
+            session = null;
+
+            if (VerifyUser(id, hash))
+            {
+                session = Authentification.GenerateSaltString();
+
+                ExecuteVoid($@"UPDATE {UAUTH}
+                               SET [LastUserAgent] = '{ToB64(useragent)}',
+                                   [LastIP] = '{ip}',
+                                   [Session] = '{session}',
+                                   [LastLogin] = CONVERT(DATETIME, '{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}', 126)
+                               WHERE [ID]={id}");
+
+                return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// 
@@ -171,13 +204,45 @@ namespace ASC.Server
         /// <returns></returns>
         public DBUser GetUser(Guid guid) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE CONVERT(NVARCHAR(255), [UUID]) = N'{guid:D}'").First();
 
-        public (DBUser, double)[] FindUsers(string name)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public (DBUser, double, double, (string, string))[] FindUsers(string name)
         {
-            var match = Execute<DBUserComparison>($"SELECT u.*, SOUNDEX('{name}', u.[Name]) AS Soundex, DIFFERENCE('{name}', u.[Name]) as Difference FROM {USERS} AS u WHERE Difference < 3");
-            var c = match.Count();
-            
-            return null;
+            if (!ValidateUserName(name))
+                return new(DBUser, double, double, (string, string))[0];
+
+            string org = Execute($"SELECT SOUNDEX('{name}')").First()[0];
+            IEnumerable<(DBUserComparison, double)> match = from c in Execute<DBUserComparison>(GetScript("FindUsers", name))
+                                                            let sim = CalculateSimilarity(name, c.Name)
+                                                            orderby c.Difference ascending,
+                                                                    sim descending,
+                                                                    Math.Abs(c.Name[0] - name[0]) ascending,
+                                                                    c.Name ascending
+                                                            select (c, sim);
+            (DBUser, double, double, (string, string))[] res = new(DBUser, double, double, (string, string))[match.Count()];
+            int i = 0;
+
+            foreach ((DBUserComparison comp, double sim) in match)
+                res[i++] = (comp, comp.Difference, sim, (org, comp.Soundex));
+
+            return res;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="function"></param>
+        public void CreateFunction(string function) => ExecuteVoid(GetScript($"dbo.Functions.{function}"));
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public bool ContainsFunction(string function) => Execute($@"SELECT CASE WHEN (object_id('{function.ToUpper()}') IS NOT NULL) THEN 1 ELSE 0 END").First()[0] == 1;
 
         /// <summary>
         /// Creates a new predefined table associated with the given table name
@@ -207,8 +272,11 @@ namespace ASC.Server
                 ExecuteVoid($"DROP DATABASE {DB};");
         }
 
-        internal bool ValidateUser(DBUser user) => ASCServer.regex(user.Name ?? "", @"^[\w\-\. ]+$", out _) &&
-                                                   ASCServer.regex(user.Status ?? "", @"^[^\'\""\=\`\´]+$", out _);
+        internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) && ASCServer.regex(user.Status ?? "", @"^[^\'\""\=\`\´]+$", out _);
+
+        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
+
+        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _);
 
         internal long NextID(string table) => (long)Execute(GetScript("NextID", table)).First()[0];
 
@@ -316,6 +384,8 @@ namespace ASC.Server
 
             internal static void ExecuteVoid(string sql)
             {
+                LogSQL(sql);
+
                 using (SqlCommand cmd = new SqlCommand(Wrap(sql), Connection))
                     cmd.ExecuteNonQuery();
             }
@@ -323,6 +393,8 @@ namespace ASC.Server
             internal static IEnumerable<T> Execute<T>(string sql)
                 where T : IDBType, new()
             {
+                LogSQL(sql);
+
                 using (SqlCommand cmd = new SqlCommand(Wrap(sql), Connection))
                 using (SqlDataReader rd = cmd.ExecuteReader())
                     while (rd.Read())
@@ -331,15 +403,78 @@ namespace ASC.Server
 
             internal static IEnumerable<dynamic> Execute(string sql)
             {
+                LogSQL(sql);
+
                 using (SqlCommand cmd = new SqlCommand(sql, Connection))
                 using (SqlDataReader rd = cmd.ExecuteReader())
                     foreach (object obj in rd)
                         yield return obj;
             }
 
+            internal static string ToB64(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text ?? ""));
+
+            internal static string FromB64(string b64) => Encoding.UTF8.GetString(Convert.FromBase64String(b64 ?? ""));
+
             internal static string GetScript(string name) => File.ReadAllText($@"{Directory.GetCurrentDirectory()}\{ScriptFolder}\{name}.sql");
 
             internal static string GetScript(string name, params object[] args) => string.Format(GetScript(name), args ?? new object[0]);
+
+            /// <summary>
+            /// Calculate percentage similarity of two strings
+            /// </summary>
+            /// <param name="source">Source String to Compare with</param>
+            /// <param name="target">Targeted String to Compare</param>
+            /// <returns>Return Similarity between two strings from 0 to 1.0</returns>
+            public static double CalculateSimilarity(string source, string target)
+            {
+                if ((source?.Length != 0) && (target?.Length != 0))
+                    return 1.0 - (source == target ? 0 : ComputeLevenshteinDistance(source, target) / (double)Math.Max(source.Length, target.Length));
+                else
+                    return 0.0;
+            }
+
+            internal static int ComputeLevenshteinDistance(string source, string target)
+            {
+                if ((source == null) || (target == null))
+                    return 0;
+                else if (source == target)
+                    return source.Length;
+
+                int slen = source.Length;
+                int tlen = target.Length;
+
+                if (slen == 0)
+                    return tlen;
+                if (tlen == 0)
+                    return slen;
+
+                int[,] distance = new int[slen + 1, tlen + 1];
+
+                for (int i = 0; i <= slen; distance[i, 0] = i++)
+                    ;
+                for (int j = 0; j <= tlen; distance[0, j] = j++)
+                    ;
+
+                for (int i = 1; i <= slen; i++)
+                    for (int j = 1; j <= tlen; j++)
+                    {
+                        int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
+
+                        // Step 4
+                        distance[i, j] = Math.Min(Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1), distance[i - 1, j - 1] + cost);
+                    }
+
+                return distance[slen, tlen];
+            }
+
+            private static void LogSQL(string command)
+            {
+                if (Instance.DebugMode)
+                    string.Join(" ", from line in command.Split('\r', '\n')
+                                     let tline = Regex.Replace(line, @"\-\-.*$", "", RegexOptions.Compiled).Trim()
+                                     where tline.Length > 0
+                                     select tline).Sql();
+            }
         }
     }
 
@@ -419,10 +554,12 @@ namespace ASC.Server
 
     [Serializable]
     internal sealed class DBUserComparison
-        : IDBType
+        : DBUser
     {
         internal string Soundex { set; get; }
         internal int Difference { set; get; }
+
+        public override string ToString() => $"({Soundex}, {Difference}, ({base.ToString()}))";
     }
 
     /// <summary>
@@ -456,6 +593,12 @@ namespace ASC.Server
         /// The user's GUID
         /// </summary>
         public Guid UUID { get; set; } = Guid.Empty;
+
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>A string that represents the current object.</returns>
+        public override string ToString() => $"{ID:x16}: '{Name}' ('{Status}', {{{UUID}}}, {IsAdmin}, {IsBlocked})";
     }
 
     /// <summary>

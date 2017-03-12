@@ -105,8 +105,8 @@ namespace ASC.Server
 
                 HTTPResponse resp = _rfunc(ctx.Request, ctx.Response);
 
-                ctx.Response.ContentLength64 = resp.Bytes.Length;
-                ctx.Response.OutputStream.Write(resp.Bytes, 0, resp.Bytes.Length);
+                ctx.Response.ContentLength64 = resp.Length;
+                ctx.Response.OutputStream.Write(resp.Bytes ?? new byte[0], 0, resp.Length);
 
                 $"Response sent to '{ctx.Request.RemoteEndPoint}' with the status code '{ctx.Response?.StatusCode ?? 500} - {ctx.Response?.StatusDescription ?? "Internal error"}'".Msg();
             }
