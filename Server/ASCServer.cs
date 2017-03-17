@@ -1,9 +1,11 @@
 ﻿using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Drawing.Imaging;
 using System.Net.Sockets;
 using System.Diagnostics;
 using System.Reflection;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Net;
@@ -24,9 +26,11 @@ namespace ASC.Server
         : IDisposable
     {
         internal static Dictionary<string, Dictionary<string, string>> LanguagePacks { get; }
+        internal static Dictionary<string, ASCOperation> Operations { get; }
         internal static Dictionary<StatusCode, string> StatusCodes { get; } = new Dictionary<StatusCode, string>
         {
             [StatusCode._200] = "OK",
+            [StatusCode._400] = "Invalid operation",
             [StatusCode._403] = "Forbidden",
             [StatusCode._404] = "Not found",
             [StatusCode._420] = "420/Weed",
@@ -39,10 +43,21 @@ namespace ASC.Server
         private readonly bool* acceptconnections;
 
 
-        static ASCServer() => LanguagePacks = (from f in Directory.GetFiles($@"{Directory.GetCurrentDirectory()}\Languages", "*.json", SearchOption.AllDirectories)
-                                               let nfo = new FileInfo(f)
-                                               let code = nfo.Name.Replace(nfo.Extension, "")
-                                               select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
+        static ASCServer()
+        {
+            LanguagePacks = (from f in Directory.GetFiles($@"{Directory.GetCurrentDirectory()}\Languages", "*.json", SearchOption.AllDirectories)
+                             let nfo = new FileInfo(f)
+                             let code = nfo.Name.Replace(nfo.Extension, "")
+                             select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
+
+            Operations = new Dictionary<string, ASCOperation>
+            {
+                ["login"] = new ASCOperation((req, res, vals) => {
+
+                    return null;
+                }, "id", "hash"),
+            };
+        }
 
         /// <summary>
         /// Creates a new instance
@@ -56,7 +71,7 @@ namespace ASC.Server
             foreach (KeyValuePair<string, Dictionary<string, string>> dic in LanguagePacks)
                 $"Language dictionary '{dic.Value["lang_name"]} ({dic.Key})' loaded.".Ok();
 
-            ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version}";
+            ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version} Unknown6656/420.1337.14.88";
 
             SSL = p => p == port + 1;
 
@@ -161,11 +176,12 @@ namespace ASC.Server
         /// <returns>HTTP response data</returns>
         public HTTPResponse SendResponse(HttpListenerRequest request, HttpListenerResponse response)
         {
+            #region INIT
+
             Dictionary<string, object> vars = new Dictionary<string, object>();
             int port = request.LocalEndPoint.Port;
             string url = request.RawUrl;
             DateTime now = DateTime.Now;
-            string lang = "en";
 
             response.Headers[HttpResponseHeader.Server] = ServerString;
 
@@ -176,6 +192,12 @@ namespace ASC.Server
             while (!*acceptconnections)
                 if (sw.ElapsedMilliseconds > 30000)
                     return SendError(request, response, vars, StatusCode._500, "");
+
+            #endregion
+            #region RESOURCE HANDLING
+
+            if (Regex.IsMatch(url, @"[\\\/]?favicon\.ico$", RegexOptions.IgnoreCase))
+                url = "res~favicon~image/x-icon";
 
             if (regex(url, @"res\~(?<res>.+)\~(?<type>[\w\-\/]+)\b?", out Match m))
             {
@@ -191,9 +213,34 @@ namespace ASC.Server
 
                     foreach (Func<HTTPResponse> f in new Func<HTTPResponse>[] {
                         () => Resources.ResourceManager.GetString(resource),
-                        () => ToArray(Resources.ResourceManager.GetStream(resource)),
-                        () => ToArray(Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}")),
-                        () => typeof(Resources).GetProperty(resource, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null) as byte[],
+                        () => Resources.ResourceManager.GetStream(resource).ToBytes(),
+                        () =>
+                        {
+                            object obj = typeof(Resources).GetProperty(resource, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+
+                            switch (obj)
+                            {
+                                case Icon ico:
+                                    using (MemoryStream ms = new MemoryStream())
+                                    {
+                                        ico.Save(ms);
+
+                                        return ms.ToArray();
+                                    }
+                                case Image i:
+                                    using (MemoryStream ms = new MemoryStream())
+                                    {
+                                        i.Save(ms, ImageFormat.Png);
+
+                                        return ms.ToArray();
+                                    }
+                                case Stream s:
+                                    return s.ToBytes();
+                                default:
+                                    return obj as byte[];
+                            }
+                        },
+                        () => Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}").ToBytes(),
                     })
                         try
                         {
@@ -211,36 +258,67 @@ namespace ASC.Server
 
                 return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
             }
+            #endregion
+            #region 'REGULAR' REQUESTS
             else
             {
                 SetStatusCode(response, StatusCode._200);
 
-                if (request.QueryString.AllKeys.Contains("lang"))
+                if (contains(request, "lang", out string lang))
                 {
-                    lang = request.QueryString["lang"].ToLower();
+                    lang = lang?.ToLower();
 
                     if (!LanguagePacks.ContainsKey(lang))
-                        lang = "en";
+                        lang = (from lraw in request.UserLanguages
+                                let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
+                                let lcd = (lng.Contains('-') ? lng.Split('-')[0] : lng).ToLower().Trim()
+                                where LanguagePacks.ContainsKey(lcd)
+                                select lcd).FirstOrDefault();
                 }
 
-                foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang])
+                foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
                     vars[kvp.Key] = kvp.Value;
 
                 vars["time"] = now;
                 vars["port"] = port;
                 vars["ssl"] = SSL(port);
-                vars["script"] = "// script";
+                vars["user_agent"] = request.UserAgent;
+                vars["user_host"] = request.UserHostName;
+                vars["user_addr"] = request.UserHostAddress;
+                vars["script"] = FetchResource(Resources.script, vars);
                 vars["style"] = FetchResource(Resources.style, vars);
+
+                if (contains(request, "operation", out string op))
+                    if (Operations.ContainsKey(op = op.ToLower()))
+                    {
+                        ASCOperation ascop = Operations[op];
+                        string[] values = new string[ascop.Keys.Length];
+                        int indx = 0;
+
+                        foreach (string key in ascop.Keys)
+                            if (contains(request, key, out string val))
+                                values[indx++] = val ?? "";
+                            else
+                                return SendError(request, response, vars, StatusCode._400, $"A value for '{key}' is required when using the operation '{op}'.");
+
+                        return ascop.Handler(request, response, values);
+                    }
+                    else
+                        return SendError(request, response, vars, StatusCode._400, $"The operation '{op}' is unknown.");
 
                 return FetchResource(Resources.frame, vars);
             }
+
+            #endregion
         }
 
         internal HTTPResponse SendError(HttpListenerRequest request, HttpListenerResponse response, Dictionary<string, object> vars, StatusCode code, string msg = null)
         {
             SetStatusCode(response, code);
 
-            vars["error_message"] = msg ?? vars[$"error{code}"].ToString();
+            vars["error_code"] = ((int)code).ToString();
+            vars["error_message"] = vars[$"error{code}"].ToString();
+            vars["error_submessage"] = msg ?? "";
             vars["inner"] = FetchResource(Resources.error, vars);
 
             return FetchResource(Resources.frame, vars);
@@ -257,25 +335,49 @@ namespace ASC.Server
         /// </summary>
         public void Dispose() => Server.Dispose();
 
-        internal static byte[] ToArray(Stream st)
+        internal static bool contains(HttpListenerRequest request, string key, out string value)
         {
-            using (st)
-            {
-                byte[] buffer = new byte[st.Length];
+            bool ret;
 
-                st.Position = 0;
-                st.Read(buffer, 0, buffer.Length);
+            (value, ret) = request?.QueryString?.AllKeys?.Contains(key) ?? false ? (request.QueryString[key], true) : (null, false);
 
-                return buffer;
-            }
+            return ret;
         }
 
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    public sealed class ASCOperation
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public Func<HttpListenerRequest, HttpListenerResponse, string[], HTTPResponse> Handler { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string[] Keys { get; }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="keys"></param>
+        public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, string[], HTTPResponse> handler, params string[] keys)
+        {
+            this.Keys = keys ?? new string[0];
+            this.Handler = handler ?? ((req, res, k) => new byte[0]);
+        }
+    }
+
     internal enum StatusCode
     {
         _200 = 200,
+        _400 = 400,
         _403 = 403,
         _404 = 404,
         _420 = 420,

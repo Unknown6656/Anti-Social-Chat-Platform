@@ -130,19 +130,33 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to var b;
-        ///if (!(b = t)) {
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string script {
+            get {
+                return ResourceManager.GetString("script", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to var sha512;
+        ///
+        ///(function () {
+        ///    var b;
+        ///    if (!(b = t)) {
         ///        var w = Math,
-        ///                y = {}, B = y.p = {}, aa = function () {}, C = B.A = {
-        ///                        extend: function (a) {
-        ///                                aa.prototype = this;
-        ///                                var c = new aa;
-        ///                                a &amp;&amp; c.u(a);
-        ///                                c.z = this;
-        ///                                return c
-        ///                        },
-        ///                        create: function () {
-        ///                                var a = this. [rest of string was truncated]&quot;;.
+        ///            y = {}, B = y.p = {}, aa = function () { }, C = B.A = {
+        ///                extend: function (a) {
+        ///                    aa.prototype = this;
+        ///                    var c = new aa;
+        ///                    a &amp;&amp; c.u(a);
+        ///                    c.z = this;
+        ///                    return c
+        ///                },
+        ///                create: function () {
+        ///                    var a = this.extend();
+        ///                    a.h.apply(a, arguments);
+        ///         [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha512 {
             get {

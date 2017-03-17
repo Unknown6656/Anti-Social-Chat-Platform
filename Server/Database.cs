@@ -20,6 +20,8 @@ namespace ASC.Server
     public sealed class Database
         : IDisposable
     {
+        #region PROPERTIES, FIELDS AND CONSTANTS
+
         internal const string UAUTH = "[UserAuthentifications]";
         internal const string MESSG = "[Messages]";
         internal const string CHATS = "[Chats]";
@@ -58,6 +60,7 @@ namespace ASC.Server
         /// </summary>
         public bool DebugMode { set; get; } = false;
 
+        #endregion
         // TODO : connection stuff, query stuff etc.
 
         private Database()
@@ -75,6 +78,8 @@ namespace ASC.Server
 
             Disconnect();
         }
+
+        #region USER MANAGEMENT
 
         /// <summary>
         /// Adds the given user to the database
@@ -102,19 +107,73 @@ namespace ASC.Server
         }
 
         /// <summary>
-        /// 
+        /// Updates the user information with the given user structure and returns whether the operation was successful
         /// </summary>
-        /// <param name="user"></param>
-        /// <returns></returns>
+        /// <param name="user">New user information</param>
+        /// <returns>Returns whether the operation was successful</returns>
         public bool UpdateUser(DBUser user)
         {
             if (!ValidateUser(user))
                 return false;
 
-            ExecuteVoid($@"UPDATE {USERS} SET [Name]='{user.Name}',[Status]='{user.Status}',[IsAdmin]='{(user.IsAdmin ? 1 : 0)}',[IsBlocked]='{(user.IsBlocked ? 1 : 0)}'");
+            ExecuteVoid($@"UPDATE {USERS} SET [Name]='{user.Name}',[Status]='{user.Status}',[IsAdmin]='{(user.IsAdmin ? 1 : 0)}',[IsBlocked]='{(user.IsBlocked ? 1 : 0)}' WHERE [ID] = {user.ID}");
 
             return true;
         }
+
+        /// <summary>
+        /// Returns a list of all registered and unblocked admins
+        /// </summary>
+        /// <returns>List of all admins</returns>
+        public DBUser[] GetAdmins() => Execute<DBUser>($"SELECT * FROM {USERS} WHERE [IsAdmin] = 1 AND [IsBlocked] = 0").ToArray();
+
+        /// <summary>
+        /// Returns the user associated with the given user ID
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User</returns>
+        public DBUser GetUser(long id) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE [ID] = {id}").First();
+
+        /// <summary>
+        /// Returns the user associated with the given user UUID/GUID
+        /// </summary>
+        /// <param name="uuid">User UUID</param>
+        /// <returns>User</returns>
+        public DBUser GetUser(Guid uuid) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE CONVERT(NVARCHAR(255), [UUID]) = N'{uuid:D}'").First();
+
+        /// <summary>
+        /// Searches for the given user name and returns a list of the first 20 search results 
+        /// </summary>
+        /// <param name="name">Search string</param>
+        /// <returns>Search result</returns>
+        public (DBUser, double, double, (string, string))[] FindUsers(string name)
+        {
+            if (!ValidateUserName(name))
+                return new(DBUser, double, double, (string, string))[0];
+
+            string org = Execute($"SELECT SOUNDEX('{name}')").First()[0];
+            IEnumerable<(DBUserComparison, double)> match = from c in Execute<DBUserComparison>(GetScript("FindUsers", name))
+                                                            let sim = CalculateSimilarity(name, c.Name)
+                                                            orderby c.Difference ascending,
+                                                                    sim descending,
+                                                                    Math.Abs(c.Name[0] - name[0]) ascending,
+                                                                    c.Name ascending
+                                                            select (c, sim);
+            (DBUser, double, double, (string, string))[] res = new(DBUser, double, double, (string, string))[match.Count()];
+            int i = 0;
+
+            foreach ((DBUserComparison comp, double sim) in match)
+                res[i++] = (comp, comp.Difference, sim, (org, comp.Soundex));
+
+            return res;
+        }
+
+        internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) && ASCServer.regex(user.Status ?? "", @"^[^\'\""\=\`\´]+$", out _);
+
+        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
+
+        #endregion
+        #region AUTHENTIFICATION MANAGEMENT
 
         /// <summary>
         /// Updates the given user hash and returns, whether the operation was successful
@@ -131,12 +190,6 @@ namespace ASC.Server
 
             return true;
         }
-
-        /// <summary>
-        /// Returns a list of all registered and unblocked admins
-        /// </summary>
-        /// <returns>List of all admins</returns>
-        public DBUser[] GetAdmins() => Execute<DBUser>($"SELECT * FROM {USERS} WHERE [IsAdmin] = 1 AND [IsBlocked] = 0").ToArray();
 
         /// <summary>
         /// 
@@ -190,58 +243,22 @@ namespace ASC.Server
         /// <returns></returns>
         public DBUserAuthentification GetAuth(long id) => Execute<DBUserAuthentification>($"SELECT * FROM {UAUTH} WHERE [ID] = {id}").First();
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public DBUser GetUser(long id) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE [ID] = {id}").First();
+        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _);
+
+        #endregion
+        #region GENERAL
 
         /// <summary>
-        /// 
+        /// Creates the function from the script 'dbo.Functions.&lt;name&gt;.sql'
         /// </summary>
-        /// <param name="guid"></param>
-        /// <returns></returns>
-        public DBUser GetUser(Guid guid) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE CONVERT(NVARCHAR(255), [UUID]) = N'{guid:D}'").First();
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        public (DBUser, double, double, (string, string))[] FindUsers(string name)
-        {
-            if (!ValidateUserName(name))
-                return new(DBUser, double, double, (string, string))[0];
-
-            string org = Execute($"SELECT SOUNDEX('{name}')").First()[0];
-            IEnumerable<(DBUserComparison, double)> match = from c in Execute<DBUserComparison>(GetScript("FindUsers", name))
-                                                            let sim = CalculateSimilarity(name, c.Name)
-                                                            orderby c.Difference ascending,
-                                                                    sim descending,
-                                                                    Math.Abs(c.Name[0] - name[0]) ascending,
-                                                                    c.Name ascending
-                                                            select (c, sim);
-            (DBUser, double, double, (string, string))[] res = new(DBUser, double, double, (string, string))[match.Count()];
-            int i = 0;
-
-            foreach ((DBUserComparison comp, double sim) in match)
-                res[i++] = (comp, comp.Difference, sim, (org, comp.Soundex));
-
-            return res;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="function"></param>
+        /// <param name="function">Function name</param>
         public void CreateFunction(string function) => ExecuteVoid(GetScript($"dbo.Functions.{function}"));
 
         /// <summary>
-        /// 
+        /// Returns whether the database contains the given function
         /// </summary>
-        /// <param name="function"></param>
-        /// <returns></returns>
+        /// <param name="function">Function name</param>
+        /// <returns>Check result</returns>
         public bool ContainsFunction(string function) => Execute($@"SELECT CASE WHEN (object_id('{function.ToUpper()}') IS NOT NULL) THEN 1 ELSE 0 END").First()[0] == 1;
 
         /// <summary>
@@ -272,12 +289,6 @@ namespace ASC.Server
                 ExecuteVoid($"DROP DATABASE {DB};");
         }
 
-        internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) && ASCServer.regex(user.Status ?? "", @"^[^\'\""\=\`\´]+$", out _);
-
-        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
-
-        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _);
-
         internal long NextID(string table) => (long)Execute(GetScript("NextID", table)).First()[0];
 
         private long Count(string table) => (long)Execute($"SELECT COUNT([ID]) FROM {table}").First()[0];
@@ -307,6 +318,8 @@ namespace ASC.Server
 
             return res;
         }
+
+        #endregion
 
 
         internal static class DatabaseHelper

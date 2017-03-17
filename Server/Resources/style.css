@@ -12,6 +12,35 @@ body {
     color: wheat;
 }
 
+#noscript {
+    background-color: rgba(85, 51, 51, .6);
+    text-align: center;
+    line-height: 100%;
+    z-index: 6000001;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    top: 0px;
+}
+
+#noscript span {
+    font-family: 'UnifrakturCook', cursive;
+    text-align: center;
+    color: #f55;
+    font-size: 3em;
+    vertical-align: middle;
+    display: inline-block;
+    align-content: center;
+    line-height: normal;
+    position: relative;
+    margin-top: -5em;
+    height: 10em;
+    top: 50%;
+}
+
 #header,
 #footer {
     background-color: #333;
@@ -45,7 +74,15 @@ body {
 }
 
 #main {
+    position: relative;
+    width: 100%;
+    right: auto;
+    left: auto;
+    top: 80px;
+}
 
+.blurred {
+    filter: blur(10px);
 }
 
 @media all and (max-width : 799px) {

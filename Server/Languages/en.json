@@ -4,9 +4,12 @@
     "code": "en"
   },
   "error": {
+    "noscript": "You need to enable Javascript to use this website properly.",
+    "error": "Error",
     "500": "Service currently not available",
-    "404": "Resource not found",
-    "403": "Permission denied"
+    "400": "Invalid operation",
+    "403": "Permission denied",
+    "404": "Resource not found"
   },
   "global": {
     "title": "Anti-Social Chat Platform",

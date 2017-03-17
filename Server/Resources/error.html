@@ -1,13 +1,24 @@
 ﻿<style>
-    span#_error {
+    div#_error, div#_error * {
+        font-family: 'UnifrakturCook', cursive;
+        align-content: center;
+        text-align: center;
         color: #E95E5E;
         width: 100%;
-        left: auto;
         right: auto;
+        left: auto;
+    }
+
+    #_error .big {
+        font-size: 2em;
+    }
+
+    #_error .med {
+        font-size: 1.5em;
     }
 </style>
-<span id="_error">    
-    §error_code§<br />    
-    §error_message§<br />
-    §error_submessage§
-</span>
+<div id="_error">    
+    <b class="big">§error_error§ №§error_code§</b><br/>    
+    <span class="med">[§error_message§]</span><br />
+    <span class="big">§error_submessage§</span>
+</div>

@@ -4,6 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 using System.ServiceModel.Security;
 using System.Collections.Generic;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Net.Security;
 using System.ServiceModel;
@@ -16,6 +17,8 @@ using System.Text;
 using System.Net;
 using System.IO;
 using System;
+
+using NetFwTypeLib;
 
 namespace ASC.Server
 {
@@ -138,6 +141,18 @@ namespace ASC.Server
         /// <returns>Return code</returns>
         public static int Main(string[] args)
         {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+
+            if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                "This application is not running as administrator and will therefore have privilege and authorisation problems. Please restart it with elevated privilege.".Err();
+
+                return -1;
+            }
+            else
+                "Running as administrator. Perfect.".Ok();
+
             string dir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             int retcode = 0;
 #if DEBUG
@@ -163,6 +178,24 @@ namespace ASC.Server
                     {
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
+
+                        "Setting firewall rules ...".Msg();
+
+                        foreach (int port in new int[] { Win32.PORT, Win32.PORT + 1})
+                        {
+                            if (FirewallUtils.IsPortOpen(port))
+                            {
+                                $"A serive is already running on port {port}. It will be shut down ...".Warn();
+
+                                FirewallUtils.ClosePort(port);
+                            }
+
+                            FirewallUtils.OpenPort(port, "ASC Server");
+
+                            $"Port {port} was successfully registered".Ok();
+                        }
+
+                        "Firewall rules set.".Ok();
 
                         fixed (bool* bptr = &accptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
@@ -265,6 +298,73 @@ namespace ASC.Server
         }
     }
 
+    internal static class FirewallUtils
+    {
+        private static INetFwProfile sm_fwProfile = null;
+        private static Dictionary<string, string> TypeGUIDs { get; } = new Dictionary<string, string>
+        {
+            ["INetFwMgr"] = "{304CE942-6E39-40D8-943A-B913C40C9CD4}",
+            ["INetAuthApp"] = "{EC9846B3-2762-4A6B-A214-6ACB603462D2}",
+            ["INetOpenPort"] = "{0CA545C6-37AD-4A6C-BF92-9F7610067EF5}",
+        };
+
+
+        internal static bool IsPortOpen(int port)
+        {
+            EnsureSetup();
+
+            Type progID = Type.GetTypeFromProgID("HNetCfg.FwMgr");
+            INetFwMgr firewall = Activator.CreateInstance(progID) as INetFwMgr;
+            INetFwOpenPorts ports = firewall.LocalPolicy.CurrentProfile.GloballyOpenPorts;
+            IEnumerator iter = ports.GetEnumerator();
+
+            while (iter.MoveNext())
+                if ((iter.Current as INetFwOpenPort).Port == port)
+                    return true;
+
+            return false;
+        }
+
+        internal static void OpenPort(int port, string applicationName)
+        {
+            EnsureSetup();
+
+            if (IsPortOpen(port))
+                return;
+
+            INetFwOpenPort fwport = GetInstance("INetOpenPort") as INetFwOpenPort;
+
+            fwport.Port = port;
+            fwport.Protocol = NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_TCP;
+            fwport.Name = applicationName;
+            fwport.IpVersion = NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY;
+
+            sm_fwProfile.GloballyOpenPorts.Add(fwport);
+        }
+
+        internal static void ClosePort(int port)
+        {
+            EnsureSetup();
+
+            if (!IsPortOpen(port))
+                return;
+
+            INetFwOpenPorts ports = sm_fwProfile.GloballyOpenPorts;
+            ports.Remove(port, NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_TCP);
+        }
+
+        private static void EnsureSetup()
+        {
+            if (sm_fwProfile == null)
+            {
+                INetFwMgr fwMgr = GetInstance("INetFwMgr") as INetFwMgr;
+                sm_fwProfile = fwMgr.LocalPolicy.CurrentProfile;
+            }
+        }
+
+        private static object GetInstance(string typeName) => Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid(TypeGUIDs[typeName])));
+    }
+
     internal static class Win32
     {
         internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
@@ -279,6 +379,27 @@ namespace ASC.Server
 
         [DllImport("kernel32.dll")]
         internal static extern IntPtr GetConsoleWindow();
+
+
+        /// <summary>
+        /// Converts the given stream to a byte array
+        /// </summary>
+        /// <param name="s">Stream</param>
+        /// <returns>Byte array</returns>
+        public static byte[] ToBytes(this Stream s)
+        {
+            if (s == null)
+                return new byte[0];
+            else
+            {
+                byte[] arr = new byte[s.Length];
+
+                s.Position = 0;
+                s.Read(arr, 0, arr.Length);
+
+                return arr;
+            }
+        }
     }
 
     internal static class Logger
