@@ -38,6 +38,7 @@ namespace ASC.Server
         };
         internal Func<int, bool> SSL { get; }
         internal string ServerString { get; }
+        internal Database tSQL { get; set; }
         internal HTTPServer Server { get; }
 
         private readonly bool* acceptconnections;
@@ -52,10 +53,18 @@ namespace ASC.Server
 
             Operations = new Dictionary<string, ASCOperation>
             {
-                ["login"] = new ASCOperation((req, res, vals) => {
-
-                    return null;
-                }, "id", "hash"),
+                ["user_by_name"] = new ASCOperation((req, res, vals, db) => ToJSON(db.FindUsers(vals["name"])), "name"),
+                ["user_by_id"] = new ASCOperation((req, res, vals, db) => ToJSON(db.GetUser(long.Parse(vals["id"]))), "id"),
+                ["user_by_guid"] = new ASCOperation((req, res, vals, db) => ToJSON(db.GetUser(Guid.Parse(vals["guid"]))), "guid"),
+                ["auth_login"] = new ASCOperation((req, res, vals, db) => ToJSON(new
+                {
+                    Success = db.Login(long.Parse(vals["id"]), vals["hash"], req.RemoteEndPoint.ToString(), req.UserAgent, out string session),
+                    Session = session ?? ""
+                }), "id", "hash"),
+                ["auth_salt"] = new ASCOperation((req, res, vals, db) => ToJSON(new
+                {
+                    hash = db.GetUserSalt(long.Parse(vals["id"]))
+                }), "id"),
             };
         }
 
@@ -64,7 +73,8 @@ namespace ASC.Server
         /// </summary>
         /// <param name="port">The HTTP port</param>
         /// <param name="accept">A pointer to an boolean value, which indicates whether the server shall accept incomming requests</param>
-        public ASCServer(int port, bool* accept)
+        /// <param name="tsql">The underlying Transact-SQL [tSQL] database</param>
+        public ASCServer(int port, bool* accept, Database tsql)
         {
             acceptconnections = accept;
 
@@ -73,6 +83,7 @@ namespace ASC.Server
 
             ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version} Unknown6656/420.1337.14.88";
 
+            tSQL = tsql;
             SSL = p => p == port + 1;
 
             Server = new HTTPServer(SendResponse, $"http://*:{port}/", $"https://*:{port + 1}/");
@@ -292,16 +303,22 @@ namespace ASC.Server
                     if (Operations.ContainsKey(op = op.ToLower()))
                     {
                         ASCOperation ascop = Operations[op];
-                        string[] values = new string[ascop.Keys.Length];
-                        int indx = 0;
+                        Dictionary<string, string> values = new Dictionary<string, string>();
 
                         foreach (string key in ascop.Keys)
                             if (contains(request, key, out string val))
-                                values[indx++] = val ?? "";
+                                values[key] = val ?? "";
                             else
                                 return SendError(request, response, vars, StatusCode._400, $"A value for '{key}' is required when using the operation '{op}'.");
 
-                        return ascop.Handler(request, response, values);
+                        try
+                        {
+                            return ascop.Handler(request, response, values, tSQL);
+                        }
+                        catch (Exception ex)
+                        {
+                            SendError(request, response, vars, StatusCode._400, $"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+                        }
                     }
                     else
                         return SendError(request, response, vars, StatusCode._400, $"The operation '{op}' is unknown.");
@@ -345,6 +362,8 @@ namespace ASC.Server
         }
 
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
+
+        internal static HTTPResponse ToJSON<T>(T obj) => JsonConvert.SerializeObject(obj);
     }
 
     /// <summary>
@@ -355,7 +374,7 @@ namespace ASC.Server
         /// <summary>
         /// 
         /// </summary>
-        public Func<HttpListenerRequest, HttpListenerResponse, string[], HTTPResponse> Handler { get; }
+        public Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, HTTPResponse> Handler { get; }
         /// <summary>
         /// 
         /// </summary>
@@ -367,10 +386,10 @@ namespace ASC.Server
         /// </summary>
         /// <param name="handler"></param>
         /// <param name="keys"></param>
-        public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, string[], HTTPResponse> handler, params string[] keys)
+        public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, HTTPResponse> handler, params string[] keys)
         {
             this.Keys = keys ?? new string[0];
-            this.Handler = handler ?? ((req, res, k) => new byte[0]);
+            this.Handler = handler ?? ((req, res, k, db) => new byte[0]);
         }
     }
 

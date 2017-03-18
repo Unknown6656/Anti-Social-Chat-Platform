@@ -85,6 +85,12 @@ body {
     filter: blur(10px);
 }
 
+.code {
+    font-family: 'Ubuntu Mono', 'Courier New', 'Lucida Console', Courier, Consolas, monospace;
+    white-space: pre;
+    text-align: left;
+}
+
 @media all and (max-width : 799px) {
     /* TODO : phones; */
     body {

@@ -28,6 +28,9 @@ namespace ASC.Server
     [ServiceContract(Namespace = Win32.NAMESPACE_URI), Guid(Win32.GUID)]
     public unsafe class Program
     {
+        internal const string ARG_IGNMTX = "--ignore-mutex";
+        internal const string ARG_DELFWL = "--delete-firewall-entries";
+
         private static bool accptconnections = false;
         private static Database database;
 
@@ -174,7 +177,7 @@ namespace ASC.Server
             using (Mutex m = new Mutex(false, Win32.MUTEX))
                 try
                 {
-                    if (m.WaitOne(0, false))
+                    if (m.WaitOne(0, false) || args.Contains(ARG_IGNMTX))
                     {
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
@@ -199,11 +202,11 @@ namespace ASC.Server
 
                         fixed (bool* bptr = &accptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
-                            using (ASCServer ws = new ASCServer(Win32.PORT, bptr))
-                                new Program().Inner(Win32.PORT, dir);
+                            using (ASCServer ws = new ASCServer(Win32.PORT, bptr, null))
+                                new Program().Inner(Win32.PORT, dir, ws);
                     }
                     else
-                        "Cannot start the server, as an other instance of this application is already running...".Warn();
+                        "Cannot start the server, as an other instance of this application is already running.".Warn();
                 }
                 catch (Exception ex)
                 {
@@ -215,6 +218,18 @@ namespace ASC.Server
                 }
                 finally
                 {
+                    if (args.Contains(ARG_DELFWL))
+                    {
+                        "Removing previously set firewall rules ...".Msg();
+
+                        foreach (int port in new int[] { Win32.PORT, Win32.PORT + 1 })
+                        {
+                            FirewallUtils.ClosePort(port);
+
+                            $"Port {port} was successfully un-registered".Ok();
+                        }
+                    }
+
                     "Server shut down".Ok();
 
                     m.Close();
@@ -231,13 +246,23 @@ namespace ASC.Server
         }
 
         [OperationContract]
-        internal void Inner(int port, string dir)
+        internal void Inner(int port, string dir, ASCServer ascws)
         {
+            if (ascws == null) // running from service
+            {
+                "Please avoid running the ASC server from service due to possibly incorrect initialization".Warn();
+
+                Main(new string[] { ARG_IGNMTX });
+
+                return;
+            }
+
             "Connecting to the internal database ...".Msg();
 
             using (database = Database.Instance)
                 try
                 {
+                    ascws.tSQL = database;
 #if DEBUG
                     database.DebugMode = true;
 #endif
@@ -335,8 +360,10 @@ namespace ASC.Server
             INetFwOpenPort fwport = GetInstance("INetOpenPort") as INetFwOpenPort;
 
             fwport.Port = port;
-            fwport.Protocol = NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_TCP;
+            fwport.Enabled = true;
             fwport.Name = applicationName;
+            fwport.Scope = NET_FW_SCOPE_.NET_FW_SCOPE_ALL;
+            fwport.Protocol = NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_TCP;
             fwport.IpVersion = NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY;
 
             sm_fwProfile.GloballyOpenPorts.Add(fwport);

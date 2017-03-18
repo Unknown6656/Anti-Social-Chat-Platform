@@ -152,13 +152,13 @@ namespace ASC.Server
                 return new(DBUser, double, double, (string, string))[0];
 
             string org = Execute($"SELECT SOUNDEX('{name}')").First()[0];
-            IEnumerable<(DBUserComparison, double)> match = from c in Execute<DBUserComparison>(GetScript("FindUsers", name))
-                                                            let sim = CalculateSimilarity(name, c.Name)
-                                                            orderby c.Difference ascending,
-                                                                    sim descending,
-                                                                    Math.Abs(c.Name[0] - name[0]) ascending,
-                                                                    c.Name ascending
-                                                            select (c, sim);
+            IEnumerable<(DBUserComparison, double)> match = (from c in Execute<DBUserComparison>(GetScript("FindUsers", name))
+                                                             let sim = CalculateSimilarity(name, c.Name)
+                                                             orderby c.Difference ascending,
+                                                                     sim descending,
+                                                                     Math.Abs(c.Name[0] - name[0]) ascending,
+                                                                     c.Name ascending
+                                                             select (c, sim)).Distinct(new UserSearchResultComparer());
             (DBUser, double, double, (string, string))[] res = new(DBUser, double, double, (string, string))[match.Count()];
             int i = 0;
 
@@ -168,7 +168,9 @@ namespace ASC.Server
             return res;
         }
 
-        internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) && ASCServer.regex(user.Status ?? "", @"^[^\'\""\=\`\´]+$", out _);
+        internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
+                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""\=\`\´]+$", out _) &&
+                                                   !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
 
         internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
 
@@ -241,7 +243,14 @@ namespace ASC.Server
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public DBUserAuthentification GetAuth(long id) => Execute<DBUserAuthentification>($"SELECT * FROM {UAUTH} WHERE [ID] = {id}").First();
+        public DBUserAuthentification GetAuth(long id) => Execute<DBUserAuthentification>($"SELECT * FROM {UAUTH} WHERE [ID] = {id}").Select(DecodeUAuth).First();
+
+        internal DBUserAuthentification DecodeUAuth(DBUserAuthentification auth)
+        {
+            auth.LastUserAgent = FromB64(auth.LastUserAgent);
+
+            return auth;
+        }
 
         internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _);
 
@@ -321,6 +330,14 @@ namespace ASC.Server
 
         #endregion
 
+
+        internal sealed class UserSearchResultComparer
+            : IEqualityComparer<(DBUserComparison, double)>
+        {
+            public int GetHashCode((DBUserComparison, double) obj) => obj.Item1.ID.GetHashCode();
+
+            public bool Equals((DBUserComparison, double) x, (DBUserComparison, double) y) => x.Item1.ID.Equals(y.Item1.ID);
+        }
 
         internal static class DatabaseHelper
         {
