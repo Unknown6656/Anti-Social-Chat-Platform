@@ -72,18 +72,28 @@ namespace ASC.Server.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;style&gt;
-        ///    span#_error {
+        ///    div#_error, div#_error span {
+        ///        font-family: &apos;UnifrakturCook&apos;, cursive;
+        ///        align-content: center;
+        ///        text-align: center;
         ///        color: #E95E5E;
         ///        width: 100%;
-        ///        left: auto;
         ///        right: auto;
+        ///        left: auto;
+        ///    }
+        ///
+        ///    #_error .big {
+        ///        font-size: 2em;
+        ///    }
+        ///
+        ///    #_error .med {
+        ///        font-size: 1.5em;
         ///    }
         ///&lt;/style&gt;
-        ///&lt;span id=&quot;_error&quot;&gt;    
-        ///    §error_code§&lt;br /&gt;    
-        ///    §error_message§&lt;br /&gt;
-        ///    §error_submessage§
-        ///&lt;/span&gt;.
+        ///&lt;div id=&quot;_error&quot;&gt;    
+        ///    &lt;b class=&quot;big&quot;&gt;§error_error§ №§error_code§&lt;/b&gt;&lt;br/&gt;    
+        ///    &lt;span class=&quot;med&quot;&gt;[§error_message§]&lt;/span&gt;&lt;br /&gt;
+        ///    [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string error {
             get {
@@ -130,18 +140,42 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
+        ///
+        ///$(document).ready(function () {
+        ///    var div_main = $(&apos;#main&apos;);
+        ///
+        ///    div_main.css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
+        ///
+        ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
+        ///    $(&apos;.blurred&apos;).removeClass(&apos;blurred&apos;);
+        ///});
+        ///
+        ///function gethash(password, salt) {
+        ///    return sha512(password + &apos;+&apos; + salt);
+        ///}
+        ///.
         /// </summary>
-        internal static string script {
+        internal static string post_script {
             get {
-                return ResourceManager.GetString("script", resourceCulture);
+                return ResourceManager.GetString("post_script", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to var sha512;
+        ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
-        ///(function () {
+        ///var sha512;
+        ///.
+        /// </summary>
+        internal static string pre_script {
+            get {
+                return ResourceManager.GetString("pre_script", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to (function () {
         ///    var b;
         ///    if (!(b = t)) {
         ///        var w = Math,
@@ -156,7 +190,7 @@ namespace ASC.Server.Properties {
         ///                create: function () {
         ///                    var a = this.extend();
         ///                    a.h.apply(a, arguments);
-        ///         [rest of string was truncated]&quot;;.
+        ///                    r [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string sha512 {
             get {
@@ -179,19 +213,16 @@ namespace ASC.Server.Properties {
         ///    color: wheat;
         ///}
         ///
-        ///#header,
-        ///#footer {
-        ///    background-color: #333;
-        ///    z-index: 6000000;
+        ///#noscript {
+        ///    background-color: rgba(85, 51, 51, .6);
+        ///    text-align: center;
+        ///    line-height: 100%;
+        ///    z-index: 6000001;
         ///    position: fixed;
+        ///    height: 100%;
         ///    width: 100%;
-        ///    right: 0px;
-        ///    left: 0px;
-        ///}
-        ///
-        ///#header {
-        ///    border-bottom: 1px solid #999;
-        ///    min-height: 70 [rest of string was truncated]&quot;;.
+        ///    bottom: 0px;
+        ///    right [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {

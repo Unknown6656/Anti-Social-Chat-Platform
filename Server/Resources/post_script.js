@@ -8,3 +8,7 @@ $(document).ready(function () {
     $('#noscript').css('display', 'none');
     $('.blurred').removeClass('blurred');
 });
+
+function gethash(password, salt) {
+    return sha512(password + '+' + salt);
+}

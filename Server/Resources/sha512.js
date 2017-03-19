@@ -1,5 +1,3 @@
-var sha512;
-
 (function () {
     var b;
     if (!(b = t)) {

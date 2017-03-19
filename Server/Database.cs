@@ -61,7 +61,7 @@ namespace ASC.Server
         public bool DebugMode { set; get; } = false;
 
         #endregion
-        // TODO : connection stuff, query stuff etc.
+        #region .CTOR/.DTOR
 
         private Database()
         {
@@ -74,11 +74,18 @@ namespace ASC.Server
         /// </summary>
         public void Dispose()
         {
-            disposed = true;
+            if (!disposed)
+                Disconnect();
 
-            Disconnect();
+            disposed = true;
         }
 
+        /// <summary>
+        /// Disposes the current database instance, releases all underlying resources and destroys the current object instance
+        /// </summary>
+        ~Database() => Dispose();
+
+        #endregion
         #region USER MANAGEMENT
 
         /// <summary>
@@ -329,7 +336,7 @@ namespace ASC.Server
         }
 
         #endregion
-
+        #region CLASSES
 
         internal sealed class UserSearchResultComparer
             : IEqualityComparer<(DBUserComparison, double)>
@@ -506,6 +513,8 @@ namespace ASC.Server
                                      select tline).Sql();
             }
         }
+
+        #endregion
     }
 
     /// <summary>
