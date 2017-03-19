@@ -10,5 +10,5 @@ $(document).ready(function () {
 });
 
 function gethash(password, salt) {
-    return sha512(password + '+' + salt);
+    return sha512(password + '+' + salt.toUpperCase());
 }

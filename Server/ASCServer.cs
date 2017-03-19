@@ -271,6 +271,8 @@ namespace ASC.Server
             #region 'REGULAR' REQUESTS
             else
             {
+                string session = null;
+
                 SetStatusCode(response, StatusCode._200);
 
                 if (contains(request, "lang", out string lang))
@@ -298,63 +300,75 @@ namespace ASC.Server
                 vars["post_script"] = FetchResource(Resources.post_script, vars);
                 vars["style"] = FetchResource(Resources.style, vars);
 
-                if (contains(request, "operation", out string op))
-                    if (Operations.ContainsKey(op = op.ToLower()))
-                    {
-                        ASCOperation ascop = Operations[op];
-                        Dictionary<string, string> values = new Dictionary<string, string>();
-
-                        foreach (string key in request.QueryString.AllKeys)
-                            values[key] = request.QueryString[key];
-
-                        IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
-                        string session = null;
-
-                        if (missing.Any())
-                            return SendError(request, response, vars, StatusCode._400, $"A value for '{missing.First()}' is required when using the operation '{op}'.");
-
-                        if (ascop.NeedsAuthentification)
-                        {
-                            bool res = contains(request, "id", out string sid);
-
-                            if (contains(request, "hash", out string hash))
-                                res &= verify(request, tSQL, sid, hash, out session);
-                            else if (contains(request, "session", out session))
-                                ; // TODO
-                            else
-                                res = false;
-
-                            if (!res)
-                                return SendError(request, response, vars, StatusCode._403);
-                        }
-
-                        vars["user_session"] = session;
-
-                        try
-                        {
-                            return ToJSON(new
-                            {
-                                Success = true,
-                                Data = ascop.Handler(request, response, values, tSQL)
-                            });
-                        }
-                        catch (Exception ex)
-                        {
+                if (regex(request.Url.LocalPath, @"^[\\\/]?api\.json$", out _))
+                {
 #if DEBUG
-                            return SendError(request, response, vars, StatusCode._400, $"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
-#else
-                            return ToJSON(new
-                            {
-                                Success = false,
-                                Data = null
-                            });
+                    $"API access: {url}".Info();
 #endif
+                    if (contains(request, "operation", out string op))
+                        if (Operations.ContainsKey(op = op.ToLower()))
+                        {
+                            ASCOperation ascop = Operations[op];
+                            Dictionary<string, string> values = new Dictionary<string, string>();
+
+                            foreach (string key in request.QueryString.AllKeys)
+                                values[key] = request.QueryString[key];
+
+                            IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
+
+                            if (missing.Any())
+                                return error($"A value for '{missing.First()}' is required when using the operation '{op}'.");
+
+                            try
+                            {
+                                if (ascop.NeedsAuthentification)
+                                {
+                                    bool res = contains(request, "id", out string sid);
+
+                                    if (contains(request, "hash", out string hash))
+                                        res &= verify(request, tSQL, sid, hash, out session);
+                                    else if (contains(request, "session", out session))
+                                        ; // TODO
+                                    else
+                                        res = false;
+
+                                    if (!res)
+                                        return error("", StatusCode._403);
+                                }
+
+                                vars["user_session"] = session;
+
+                                return ToJSON(new
+                                {
+                                    Success = true,
+                                    Session = session,
+                                    Data = ascop.Handler(request, response, values, tSQL)
+                                });
+                            }
+                            catch (Exception ex)
+                            {
+                                return error($"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+                            }
                         }
-                    }
+                        else
+                            return error($"The operation '{op}' is unknown.");
                     else
-                        return SendError(request, response, vars, StatusCode._400, $"The operation '{op}' is unknown.");
+                        return error("An operation must be specified.");
+                }
 
                 return FetchResource(Resources.frame, vars);
+
+                HTTPResponse error(string msg, StatusCode code = StatusCode._400)
+                {
+                    SetStatusCode(response, code);
+
+                    return ToJSON(new
+                    {
+                        Success = false,
+                        Session = session,
+                        Data = msg
+                    });
+                }
             }
 
             #endregion
