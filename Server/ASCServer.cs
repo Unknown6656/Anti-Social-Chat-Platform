@@ -53,18 +53,16 @@ namespace ASC.Server
 
             Operations = new Dictionary<string, ASCOperation>
             {
-                ["user_by_name"] = new ASCOperation((req, res, vals, db) => ToJSON(db.FindUsers(vals["name"])), "name"),
-                ["user_by_id"] = new ASCOperation((req, res, vals, db) => ToJSON(db.GetUser(long.Parse(vals["id"]))), "id"),
-                ["user_by_guid"] = new ASCOperation((req, res, vals, db) => ToJSON(db.GetUser(Guid.Parse(vals["guid"]))), "guid"),
-                ["auth_login"] = new ASCOperation((req, res, vals, db) => ToJSON(new
+                ["user_by_name"] = new ASCOperation((req, res, vals, db) => db.FindUsers(vals["name"]), false, "name"),
+                ["user_by_id"] = new ASCOperation((req, res, vals, db) => db.GetUser(long.Parse(vals["id"])), false, "id"),
+                ["user_by_guid"] = new ASCOperation((req, res, vals, db) => db.GetUser(Guid.Parse(vals["guid"])), false, "guid"),
+                ["auth_login"] = new ASCOperation((req, res, vals, db) => new
                 {
-                    Success = db.Login(long.Parse(vals["id"]), vals["hash"], req.RemoteEndPoint.ToString(), req.UserAgent, out string session),
+                    Success = verify(req, db, vals["id"], vals["hash"], out string session),
                     Session = session ?? ""
-                }), "id", "hash"),
-                ["auth_salt"] = new ASCOperation((req, res, vals, db) => ToJSON(new
-                {
-                    hash = db.GetUserSalt(long.Parse(vals["id"]))
-                }), "id"),
+                }, false, "id", "hash"),
+                ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), false, "id"),
+                ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), true, "new"),
             };
         }
 
@@ -296,7 +294,8 @@ namespace ASC.Server
                 vars["user_agent"] = request.UserAgent;
                 vars["user_host"] = request.UserHostName;
                 vars["user_addr"] = request.UserHostAddress;
-                vars["script"] = FetchResource(Resources.script, vars);
+                vars["pre_script"] = FetchResource(Resources.pre_script, vars);
+                vars["post_script"] = FetchResource(Resources.post_script, vars);
                 vars["style"] = FetchResource(Resources.style, vars);
 
                 if (contains(request, "operation", out string op))
@@ -305,19 +304,51 @@ namespace ASC.Server
                         ASCOperation ascop = Operations[op];
                         Dictionary<string, string> values = new Dictionary<string, string>();
 
-                        foreach (string key in ascop.Keys)
-                            if (contains(request, key, out string val))
-                                values[key] = val ?? "";
+                        foreach (string key in request.QueryString.AllKeys)
+                            values[key] = request.QueryString[key];
+
+                        IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
+                        string session = null;
+
+                        if (missing.Any())
+                            return SendError(request, response, vars, StatusCode._400, $"A value for '{missing.First()}' is required when using the operation '{op}'.");
+
+                        if (ascop.NeedsAuthentification)
+                        {
+                            bool res = contains(request, "id", out string sid);
+
+                            if (contains(request, "hash", out string hash))
+                                res &= verify(request, tSQL, sid, hash, out session);
+                            else if (contains(request, "session", out session))
+                                ; // TODO
                             else
-                                return SendError(request, response, vars, StatusCode._400, $"A value for '{key}' is required when using the operation '{op}'.");
+                                res = false;
+
+                            if (!res)
+                                return SendError(request, response, vars, StatusCode._403);
+                        }
+
+                        vars["user_session"] = session;
 
                         try
                         {
-                            return ascop.Handler(request, response, values, tSQL);
+                            return ToJSON(new
+                            {
+                                Success = true,
+                                Data = ascop.Handler(request, response, values, tSQL)
+                            });
                         }
                         catch (Exception ex)
                         {
-                            SendError(request, response, vars, StatusCode._400, $"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+#if DEBUG
+                            return SendError(request, response, vars, StatusCode._400, $"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+#else
+                            return ToJSON(new
+                            {
+                                Success = false,
+                                Data = null
+                            });
+#endif
                         }
                     }
                     else
@@ -361,6 +392,13 @@ namespace ASC.Server
             return ret;
         }
 
+        internal static bool verify(HttpListenerRequest req, Database db, string id, string hash, out string session)
+        {
+            session = null;
+
+            return long.TryParse(id, out long l) && db.Login(l, hash, req.RemoteEndPoint.ToString(), req.UserAgent, out session);
+        }
+
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
 
         internal static HTTPResponse ToJSON<T>(T obj) => JsonConvert.SerializeObject(obj);
@@ -374,22 +412,27 @@ namespace ASC.Server
         /// <summary>
         /// 
         /// </summary>
-        public Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, HTTPResponse> Handler { get; }
+        public Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, dynamic> Handler { get; }
         /// <summary>
         /// 
         /// </summary>
         public string[] Keys { get; }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool NeedsAuthentification { get; }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="handler"></param>
+        /// <param name="elevated"></param>
         /// <param name="keys"></param>
-        public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, HTTPResponse> handler, params string[] keys)
+        public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, dynamic> handler, bool elevated = false, params string[] keys)
         {
             this.Keys = keys ?? new string[0];
-            this.Handler = handler ?? ((req, res, k, db) => new byte[0]);
+            this.NeedsAuthentification = elevated;
+            this.Handler = handler ?? ((req, res, k, db) => null);
         }
     }
 
