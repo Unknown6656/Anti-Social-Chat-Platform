@@ -109,6 +109,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\ico_de.png" />
+    <Content Include="Resources\ico_en.png" />
+    <Content Include="Resources\ico_fr.png" />
+    <Content Include="Resources\ico_it.png" />
+    <Content Include="Resources\ico_ru.png" />
+    <Content Include="Resources\ico_zh.png" />
+    <Content Include="Resources\login.html" />
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />
     <Content Include="Resources\sha512.js" />

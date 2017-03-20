@@ -130,12 +130,96 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_de {
+            get {
+                object obj = ResourceManager.GetObject("ico_de", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_en {
+            get {
+                object obj = ResourceManager.GetObject("ico_en", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_fr {
+            get {
+                object obj = ResourceManager.GetObject("ico_fr", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_it {
+            get {
+                object obj = ResourceManager.GetObject("ico_it", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_ru {
+            get {
+                object obj = ResourceManager.GetObject("ico_ru", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ico_zh {
+            get {
+                object obj = ResourceManager.GetObject("ico_zh", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /*! jQuery v3.1.1 | (c) jQuery Foundation | jquery.org/license */
         ///!function(a,b){&quot;use strict&quot;;&quot;object&quot;==typeof module&amp;&amp;&quot;object&quot;==typeof module.exports?module.exports=a.document?b(a,!0):function(a){if(!a.document)throw new Error(&quot;jQuery requires a window with a document&quot;);return b(a)}:b(a)}(&quot;undefined&quot;!=typeof window?window:this,function(a,b){&quot;use strict&quot;;var c=[],d=a.document,e=Object.getPrototypeOf,f=c.slice,g=c.concat,h=c.push,i=c.indexOf,j={},k=j.toString,l=j.hasOwnProperty,m=l.toString,n=m.call(Object), [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string jquery311min {
             get {
                 return ResourceManager.GetString("jquery311min", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;style&gt;
+        ///    #_login code {
+        ///        font-family: monospace;
+        ///        background-color: #222;
+        ///        color: #bbb;
+        ///        display: inline-block;
+        ///        padding: 3px;
+        ///        border: 1px solid #aaa:
+        ///    }
+        ///&lt;/style&gt;
+        ///&lt;div id=&quot;_login&quot;&gt;    
+        ///    §login_guid_description§:&lt;br/&gt;
+        ///    &lt;i&gt;(§login_guid_annotation§)&lt;/i&gt;&lt;br /&gt;
+        ///    &lt;input type=&quot;text&quot; id=&quot;_guid&quot; placeholder=&quot;§login_guid_placeholder§&quot; /&gt;&lt;br /&gt;
+        ///    §login_password_description§:&lt;br/&gt;
+        ///    &lt;input type=&quot;password&quot; id=&quot;_password&quot; placeholder=&quot;§login_pa [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string login {
+            get {
+                return ResourceManager.GetString("login", resourceCulture);
             }
         }
         
@@ -149,12 +233,13 @@ namespace ASC.Server.Properties {
         ///
         ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
         ///    $(&apos;.blurred&apos;).removeClass(&apos;blurred&apos;);
-        ///});
+        ///    $(&apos;#_login button&apos;).click(function () {
+        ///        var guid = $(&apos;#_login #_guid&apos;).text();
+        ///        var pass = $(&apos;#_login #_password&apos;).text();
         ///
-        ///function gethash(password, salt) {
-        ///    return sha512(password + &apos;+&apos; + salt);
-        ///}
-        ///.
+        ///        $.ajax({
+        ///            url: api_uri + &quot;&amp;operation=user_by_guid&amp;guid=&quot; + guid
+        ///    [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -166,6 +251,7 @@ namespace ASC.Server.Properties {
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
         ///var sha512;
+        ///var api_uri = &apos;§protocol§://§host§:§port§/api.json?lang=§lang_code§&apos;;
         ///.
         /// </summary>
         internal static string pre_script {
@@ -203,6 +289,7 @@ namespace ASC.Server.Properties {
         ///
         ///@import url(&apos;https://fonts.googleapis.com/css?family=UnifrakturCook:700&apos;);
         ///
+        ///
         ///* {
         ///    font-family: &apos;Segoe UI&apos;, Tahoma, Geneva, Verdana, sans-serif;
         ///    font-size: 12pt;
@@ -222,7 +309,7 @@ namespace ASC.Server.Properties {
         ///    height: 100%;
         ///    width: 100%;
         ///    bottom: 0px;
-        ///    right [rest of string was truncated]&quot;;.
+        ///    rig [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {

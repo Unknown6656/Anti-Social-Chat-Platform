@@ -63,6 +63,7 @@ namespace ASC.Server
                 }, false, "id", "hash"),
                 ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), false, "id"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), true, "new"),
+                ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
             };
         }
 
@@ -250,6 +251,7 @@ namespace ASC.Server
                             }
                         },
                         () => Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}").ToBytes(),
+                        () => File.ReadAllBytes($"{Directory.GetCurrentDirectory()}\\Resources\\{resource}"),
                     })
                         try
                         {
@@ -290,9 +292,13 @@ namespace ASC.Server
                 foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
                     vars[kvp.Key] = kvp.Value;
 
+                vars["url"] = url;
+                vars["ssl"] = SSL(port);
                 vars["time"] = now;
                 vars["port"] = port;
-                vars["ssl"] = SSL(port);
+                vars["protocol"] = request.Url.Scheme;
+                vars["host"] = request.Url.Host;
+                vars["addr"] = request.LocalEndPoint.Address;
                 vars["user_agent"] = request.UserAgent;
                 vars["user_host"] = request.UserHostName;
                 vars["user_addr"] = request.UserHostAddress;
@@ -355,6 +361,9 @@ namespace ASC.Server
                     else
                         return error("An operation must be specified.");
                 }
+
+                if (session == null)
+                    vars["inner"] = FetchResource(Resources.login, vars);
 
                 return FetchResource(Resources.frame, vars);
 

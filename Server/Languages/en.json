@@ -11,6 +11,18 @@
     "403": "Permission denied",
     "404": "Resource not found"
   },
+  "login": {
+    "button": "Login",
+    "password": {
+      "placeholder": "Password",
+      "description": "Your password"
+    },
+    "guid": {
+      "placeholder": "User GUID",
+      "description": "Your GUID",
+      "annotation": "A string which has the format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> where <code>x</code> represents a hexadecimal character"
+    }
+  },
   "global": {
     "title": "Anti-Social Chat Platform",
     "descr": "This is the official anti-social chat platform"
