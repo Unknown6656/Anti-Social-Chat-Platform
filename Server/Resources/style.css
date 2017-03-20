@@ -8,6 +8,41 @@
     font-size: 12pt;
 }
 
+a {
+    font-size: inherit;
+    color: inherit;
+}
+
+.blurred {
+    filter: blur(10px);
+}
+
+.code {
+    font-family: 'Ubuntu Mono', 'Courier New', 'Lucida Console', Courier, Consolas, monospace;
+    white-space: pre;
+    text-align: left;
+}
+
+input,
+button {
+    background-color: #444;
+    border: 1px solid #aaa;
+    color: #ccc;
+    border-radius: 4px;
+    padding: 3px;
+    margin: 5px;
+}
+
+input[type=text],
+input[type=password] {
+    min-width: 400px;
+}
+
+button {
+    min-width: 200px;
+    cursor: pointer;
+}
+
 body {
     background-color: #222;
     color: wheat;
@@ -74,42 +109,32 @@ body {
     bottom: 0px;
 }
 
-#main {
+#content {
     position: relative;
     width: 100%;
     right: auto;
     left: auto;
+}
+
+#ssl_warning {
+    padding: 10px 20px 10px 20px;
+    background-color: #633;
+    border: 1px solid #b55;
+    border-radius: 10px;
+    font-size: 1.7em;
+    max-width: 100%;
+    color: #f55;
     top: 80px;
 }
 
-.blurred {
-    filter: blur(10px);
+#ssl_warning a {
+    border-bottom: 3px dotted #b55;
+    text-decoration: none;
 }
 
-.code {
-    font-family: 'Ubuntu Mono', 'Courier New', 'Lucida Console', Courier, Consolas, monospace;
-    white-space: pre;
-    text-align: left;
-}
-
-input,
-button {
-    background-color: #444;
-    border: 1px solid #aaa;
-    color: #ccc;
-    border-radius: 4px;
-    padding: 3px;
-    margin: 5px;
-}
-
-input[type=text],
-input[type=password] {
-    min-width: 400px;
-}
-
-button {
-    min-width: 200px;
-    cursor: pointer;
+#main {
+    padding: 10px 10px 10px 10px;
+    width: 100%;
 }
 
 @media all and (max-width : 799px) {

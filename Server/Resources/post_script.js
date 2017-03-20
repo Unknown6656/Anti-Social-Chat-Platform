@@ -1,15 +1,20 @@
 /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
 
 $(document).ready(function () {
-    var div_main = $('#main');
-
     session = $.cookie("_session");
 
-    div_main.css('top', ($('#header').height() + 20) + 'px');
+    $('#content').css('top', ($('#header').height() + 20) + 'px');
+
+    if (ssl)
+        $('#ssl_warning').css('display', 'none');
+    else
+        $('#ssl_warning a').attr('href', https_uri + '§url§');
 
     $('#noscript').css('display', 'none');
     $('.blurred').removeClass('blurred');
-
+    $(window).resize(function () {
+        $('#ssl_warning').css('top', $('#header').height() + 20);
+    });
     $('#_login button').click(function () {
         try {
             var guid = $('#_guid').val();
@@ -17,7 +22,7 @@ $(document).ready(function () {
             var id = ajax("user_by_guid", "guid=" + guid).Data.ID;
             var salt = ajax("auth_salt", "id=" + id).Data;
             var hash = gethash(pass, salt);
-            var res = ajax("auth_login", "id=" + id + "&hash=" + hash);
+            var res = ajax("auth_login", "id=" + id + "&hash=" + hash).Data;
 
             if (res.Success) {
                 alert(res.Session);
@@ -31,8 +36,8 @@ $(document).ready(function () {
             else
                 throw null;
         }
-        catch (err) {
-            // invalid pw or guid
+        catch (ex) {
+            alert("§login_invalid§");
         }
     });
     $('#_login form').submit(function (event) { event.preventDefault(); });

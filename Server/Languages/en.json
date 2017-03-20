@@ -11,6 +11,7 @@
     "403": "Permission denied",
     "404": "Resource not found"
   },
+  "unsafe": "Your connection is not safe. Consider connecting to this website via SSL.",
   "login": {
     "button": "Login",
     "password": {
@@ -21,7 +22,8 @@
       "placeholder": "User GUID",
       "description": "Your GUID",
       "annotation": "A string which has the format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> where <code>x</code> represents a hexadecimal character"
-    }
+    },
+    "invalid": "The given GUID and/or password are invalid"
   },
   "global": {
     "title": "Anti-Social Chat Platform",

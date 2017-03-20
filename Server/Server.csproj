@@ -115,6 +115,7 @@
     <Content Include="Resources\ico_it.png" />
     <Content Include="Resources\ico_ru.png" />
     <Content Include="Resources\ico_zh.png" />
+    <Content Include="Resources\jquery.cookie.js" />
     <Content Include="Resources\login.html" />
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />

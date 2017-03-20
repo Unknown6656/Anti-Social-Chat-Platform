@@ -190,6 +190,34 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to /*!
+        /// * JavaScript Cookie v2.1.3
+        /// * https://github.com/js-cookie/js-cookie
+        /// *
+        /// * Copyright 2006, 2015 Klaus Hartl &amp; Fagner Brack
+        /// * Released under the MIT license
+        /// */
+        ///;(function (factory) {
+        ///	var registeredInModuleLoader = false;
+        ///	if (typeof define === &apos;function&apos; &amp;&amp; define.amd) {
+        ///		define(factory);
+        ///		registeredInModuleLoader = true;
+        ///	}
+        ///	if (typeof exports === &apos;object&apos;) {
+        ///		module.exports = factory();
+        ///		registeredInModuleLoader = true;
+        ///	}
+        ///	if (!registeredInModuleLoader) {
+        ///		var OldCookies = window.Cookies;
+        ///		v [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string jquery_cookie {
+            get {
+                return ResourceManager.GetString("jquery_cookie", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to /*! jQuery v3.1.1 | (c) jQuery Foundation | jquery.org/license */
         ///!function(a,b){&quot;use strict&quot;;&quot;object&quot;==typeof module&amp;&amp;&quot;object&quot;==typeof module.exports?module.exports=a.document?b(a,!0):function(a){if(!a.document)throw new Error(&quot;jQuery requires a window with a document&quot;);return b(a)}:b(a)}(&quot;undefined&quot;!=typeof window?window:this,function(a,b){&quot;use strict&quot;;var c=[],d=a.document,e=Object.getPrototypeOf,f=c.slice,g=c.concat,h=c.push,i=c.indexOf,j={},k=j.toString,l=j.hasOwnProperty,m=l.toString,n=m.call(Object), [rest of string was truncated]&quot;;.
         /// </summary>
@@ -210,12 +238,12 @@ namespace ASC.Server.Properties {
         ///        border: 1px solid #aaa:
         ///    }
         ///&lt;/style&gt;
-        ///&lt;div id=&quot;_login&quot;&gt;    
-        ///    §login_guid_description§:&lt;br/&gt;
-        ///    &lt;i&gt;(§login_guid_annotation§)&lt;/i&gt;&lt;br /&gt;
-        ///    &lt;input type=&quot;text&quot; id=&quot;_guid&quot; placeholder=&quot;§login_guid_placeholder§&quot; /&gt;&lt;br /&gt;
-        ///    §login_password_description§:&lt;br/&gt;
-        ///    &lt;input type=&quot;password&quot; id=&quot;_password&quot; placeholder=&quot;§login_pa [rest of string was truncated]&quot;;.
+        ///&lt;div id=&quot;_login&quot;&gt;
+        ///    &lt;form action=&quot;&apos;§protocol§://§host§:§port§§url§&quot; method=&quot;get&quot;&gt;
+        ///        §login_guid_description§:&lt;br /&gt;
+        ///        &lt;i&gt;(§login_guid_annotation§)&lt;/i&gt;&lt;br /&gt;
+        ///        &lt;input type=&quot;text&quot; id=&quot;_guid&quot; placeholder=&quot;§login_guid_placeholder§&quot; autocomplete=&quot;on&quot; /&gt;&lt;br /&gt;
+        ///        §l [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string login {
             get {
@@ -229,17 +257,18 @@ namespace ASC.Server.Properties {
         ///$(document).ready(function () {
         ///    var div_main = $(&apos;#main&apos;);
         ///
+        ///    session = $.cookie(&quot;_session&quot;);
+        ///
         ///    div_main.css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
         ///
         ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
         ///    $(&apos;.blurred&apos;).removeClass(&apos;blurred&apos;);
-        ///    $(&apos;#_login button&apos;).click(function () {
-        ///        var guid = $(&apos;#_login #_guid&apos;).text();
-        ///        var pass = $(&apos;#_login #_password&apos;).text();
         ///
-        ///        $.ajax({
-        ///            url: api_uri + &quot;&amp;operation=user_by_guid&amp;guid=&quot; + guid
-        ///    [rest of string was truncated]&quot;;.
+        ///    $(&apos;#_login button&apos;).click(function () {
+        ///        try {
+        ///            var guid = $(&apos;#_guid&apos;).val();
+        ///            var pass = $(&apos;#_password&apos;).val();
+        ///            var id = ajax(&quot;user_by_guid&quot;, &quot;g [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -252,6 +281,7 @@ namespace ASC.Server.Properties {
         ///
         ///var sha512;
         ///var api_uri = &apos;§protocol§://§host§:§port§/api.json?lang=§lang_code§&apos;;
+        ///var session = &apos;&apos;;
         ///.
         /// </summary>
         internal static string pre_script {

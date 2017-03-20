@@ -36,6 +36,7 @@ namespace ASC.Server
             [StatusCode._420] = "420/Weed",
             [StatusCode._500] = "Server Error",
         };
+        internal (int HTTP, int HTTPS) Ports { get; }
         internal Func<int, bool> SSL { get; }
         internal string ServerString { get; }
         internal Database tSQL { get; set; }
@@ -83,6 +84,7 @@ namespace ASC.Server
             ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version} Unknown6656/420.1337.14.88";
 
             tSQL = tsql;
+            Ports = (port, port + 1);
             SSL = p => p == port + 1;
 
             Server = new HTTPServer(SendResponse, $"http://*:{port}/", $"https://*:{port + 1}/");
@@ -293,9 +295,11 @@ namespace ASC.Server
                     vars[kvp.Key] = kvp.Value;
 
                 vars["url"] = url;
-                vars["ssl"] = SSL(port);
+                vars["ssl"] = SSL(port).ToString().ToLower(); // JavaScript being bitchy
                 vars["time"] = now;
                 vars["port"] = port;
+                vars["port_http"] = Ports.HTTP;
+                vars["port_https"] = Ports.HTTPS;
                 vars["protocol"] = request.Url.Scheme;
                 vars["host"] = request.Url.Host;
                 vars["addr"] = request.LocalEndPoint.Address;
