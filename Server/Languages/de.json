@@ -3,6 +3,30 @@
     "name": "Deutsch",
     "code": "de"
   },
+  "error": {
+    "noscript": "Javascript muss aktiviert sein, um diese Webseite vollständig nutzen zu können.",
+    "error": "Fehler",
+    "500": "Dienst derzeitig nicht verfügbar",
+    "400": "Ungültige Operation",
+    "403": "Zugriff verweigert",
+    "404": "Ressource nicht gefunden"
+  },
+  "unsafe": "Diese Verbindung ist unverschlüsselt. Bitte verbinden Sie sich mit SSL, um eine sichere Verbindung zu gewährleisten.",
+  "login": {
+    "button": "Login",
+    "password": {
+      "placeholder": "Passwort",
+      "description": "Ihr Passwort"
+    },
+    "guid": {
+      "placeholder": "User GUID",
+      "description": "Ihre GUID",
+      "annotation": "Eine Zeichenkette, welches das Format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> besitzt, wobei <code>x</code> ein hexadezimales Zeichen darstellt"
+    },
+    "invalid": "Die Kombination aus GUID und Passwort ist ungültig.",
+    "blocked": "Der Benutzer mit der gegebenen GUID wurde blockiert."
+  },
+
   "global": {
     "title": "Antisoziale Chat Plattform",
     "descr": "Dies ist die offizielle anti-soziale Chat Plattform"

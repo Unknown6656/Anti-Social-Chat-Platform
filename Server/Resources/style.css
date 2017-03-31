@@ -38,7 +38,9 @@ input[type=password] {
     min-width: 400px;
 }
 
-button {
+button,
+input[type=button],
+input[type=submit] {
     min-width: 200px;
     cursor: pointer;
 }

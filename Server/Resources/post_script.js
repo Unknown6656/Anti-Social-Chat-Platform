@@ -1,11 +1,12 @@
 /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
 
 $(document).ready(function () {
-    session = $.cookie("_session");
+    session = $.cookie("_sess");
 
+    $.cookie("_lang", '§lang_code§');
     $('#content').css('top', ($('#header').height() + 20) + 'px');
 
-    if (ssl)
+    if (§ssl§) // server-generated
         $('#ssl_warning').css('display', 'none');
     else
         $('#ssl_warning a').attr('href', https_uri + '§url§');
@@ -15,23 +16,29 @@ $(document).ready(function () {
     $(window).resize(function () {
         $('#ssl_warning').css('top', $('#header').height() + 20);
     });
-    $('#_login button').click(function () {
+    $('#_login input[type=submit]').click(function () {
         try {
             var guid = $('#_guid').val();
             var pass = $('#_password').val();
-            var id = ajax("user_by_guid", "guid=" + guid).Data.ID;
+            var user = ajax("user_by_guid", "guid=" + guid).Data;
+
+            if (user.IsBlocked) {
+                alert("§login_blocked§");
+
+                return;
+            }
+
+            var id = user.ID;
             var salt = ajax("auth_salt", "id=" + id).Data;
             var hash = gethash(pass, salt);
             var res = ajax("auth_login", "id=" + id + "&hash=" + hash).Data;
 
             if (res.Success) {
-                alert(res.Session);
-
                 session = res.Session;
 
-                $.cookie("_session", session, { expires: 3600 });
+                $.cookie("_sess", session, { expires: 3600 });
 
-                window.location.reload();
+                window.location.assign('§protocol§://§host§:§port§§url§');
             }
             else
                 throw null;

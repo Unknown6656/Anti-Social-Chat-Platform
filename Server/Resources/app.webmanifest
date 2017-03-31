@@ -1,0 +1,13 @@
+﻿{
+  "lang": "en",
+  "dir": "ltr",
+  "short_name": "ASC",
+  "name": "ASC Server",
+  "description": "This is the official anti-social chat platform",
+  "icons": [
+    {
+      "src": "res~favicon~image/x-icon",
+      "sizes": "256x256"
+    }
+  ]
+}

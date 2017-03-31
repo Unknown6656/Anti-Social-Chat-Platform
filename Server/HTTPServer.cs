@@ -53,7 +53,7 @@ namespace ASC.Server
         /// <summary>
         /// Creates a new instance
         /// </summary>
-        /// <param name="func">Listening handling function</param>
+        /// <param name="method">Listening handling function</param>
         /// <param name="prefixes">HTTP(S) listening prefixes</param>
         public HTTPServer(Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> method, params string[] prefixes)
             : this(prefixes, method)

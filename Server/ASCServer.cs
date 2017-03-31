@@ -65,6 +65,8 @@ namespace ASC.Server
                 ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), false, "id"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), true, "new"),
                 ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
+
+                ["auth_test"] = new ASCOperation(null, true) // TESTING ONLY
             };
         }
 
@@ -211,7 +213,7 @@ namespace ASC.Server
             if (Regex.IsMatch(url, @"[\\\/]?favicon\.ico$", RegexOptions.IgnoreCase))
                 url = "res~favicon~image/x-icon";
 
-            if (regex(url, @"res\~(?<res>.+)\~(?<type>[\w\-\/]+)\b?", out Match m))
+            if (regex(url, @"res\~(?<res>.+)\~(?<type>[\w\-\/\-\+]+)\b?", out Match m))
             {
                 string resource = m.Groups["res"].ToString();
 
@@ -224,6 +226,7 @@ namespace ASC.Server
                     $"Processing resource '{resource}' with MIME-type '{response.ContentType}'...".Msg();
 
                     foreach (Func<HTTPResponse> f in new Func<HTTPResponse>[] {
+                        () => File.ReadAllBytes($"{Directory.GetCurrentDirectory()}\\Resources\\{resource}"),
                         () => Resources.ResourceManager.GetString(resource),
                         () => Resources.ResourceManager.GetStream(resource).ToBytes(),
                         () =>
@@ -253,7 +256,6 @@ namespace ASC.Server
                             }
                         },
                         () => Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}").ToBytes(),
-                        () => File.ReadAllBytes($"{Directory.GetCurrentDirectory()}\\Resources\\{resource}"),
                     })
                         try
                         {
@@ -280,16 +282,21 @@ namespace ASC.Server
                 SetStatusCode(response, StatusCode._200);
 
                 if (contains(request, "lang", out string lang))
-                {
                     lang = lang?.ToLower();
+                else
+                {
+                    Cookie langc = request.Cookies["_lang"];
 
-                    if (!LanguagePacks.ContainsKey(lang))
-                        lang = (from lraw in request.UserLanguages
-                                let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
-                                let lcd = (lng.Contains('-') ? lng.Split('-')[0] : lng).ToLower().Trim()
-                                where LanguagePacks.ContainsKey(lcd)
-                                select lcd).FirstOrDefault();
+                    if (langc?.Value?.Length > 0)
+                        lang = langc.Value;
                 }
+
+                if (!LanguagePacks.ContainsKey(lang))
+                    lang = (from lraw in request.UserLanguages
+                            let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
+                            let lcd = (lng.Contains('-') ? lng.Split('-')[0] : lng).ToLower().Trim()
+                            where LanguagePacks.ContainsKey(lcd)
+                            select lcd).FirstOrDefault();
 
                 foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
                     vars[kvp.Key] = kvp.Value;
@@ -338,9 +345,13 @@ namespace ASC.Server
                                     if (contains(request, "hash", out string hash))
                                         res &= verify(request, tSQL, sid, hash, out session);
                                     else if (contains(request, "session", out session))
-                                        ; // TODO
+                                        res &= tSQL.VerifySession(session); // TODO
                                     else
-                                        res = false;
+                                    {
+                                        Cookie sessc = request.Cookies["_sess"];
+
+                                        res &= sessc == null ? false : tSQL.VerifySession(session = sessc.Value); // TODO
+                                    }
 
                                     if (!res)
                                         return error("", StatusCode._403);
@@ -432,29 +443,29 @@ namespace ASC.Server
     }
 
     /// <summary>
-    /// 
+    /// Represents a simple ASC server operation
     /// </summary>
     public sealed class ASCOperation
     {
         /// <summary>
-        /// 
+        /// Returns the operation's handler
         /// </summary>
         public Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, dynamic> Handler { get; }
         /// <summary>
-        /// 
+        /// Returns an enumeration of required query keys
         /// </summary>
         public string[] Keys { get; }
         /// <summary>
-        /// 
+        /// Returns whether the ASC operation requires an user authentification
         /// </summary>
         public bool NeedsAuthentification { get; }
 
         /// <summary>
-        /// 
+        /// Creates a new instance
         /// </summary>
-        /// <param name="handler"></param>
-        /// <param name="elevated"></param>
-        /// <param name="keys"></param>
+        /// <param name="handler">The operation's handler</param>
+        /// <param name="elevated">Determines whether the operation needs elevated privileges in form of user authentification</param>
+        /// <param name="keys">The operation's required query keys</param>
         public ASCOperation(Func<HttpListenerRequest, HttpListenerResponse, Dictionary<string, string>, Database, dynamic> handler, bool elevated = false, params string[] keys)
         {
             this.Keys = keys ?? new string[0];

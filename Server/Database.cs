@@ -105,8 +105,40 @@ namespace ASC.Server
             if (!ValidateUser(user))
                 return null;
 
-            ExecuteVoid($"INSERT INTO {DB}.{USERS} ([ID], [Name], [Status], [IsAdmin], [IsBlocked], [UUID]) VALUES ({user.ID}, '{user.Name}', '{user.Status}', {(user.IsAdmin ? 1 : 0)}, {(user.IsBlocked ? 1 : 0)}, NEWID())");
-            ExecuteVoid($"INSERT INTO {DB}.{UAUTH} ([ID], [Hash], [Salt], [Session], [LastIP], [LastLogin], [LastUserAgent]) VALUES ({user.ID}, '', '{auth.Salt}', NULL, NULL, NULL, NULL)");
+            ExecuteVoid($@"INSERT INTO {DB}.{USERS} (
+                                [ID],
+                                [Name],
+                                [Status],
+                                [IsAdmin],
+                                [IsBlocked],
+                                [UUID],
+                                [MemberSince]
+                            ) VALUES (
+                                {user.ID},
+                                '{user.Name}',
+                                '{user.Status}',
+                                {(user.IsAdmin ? 1 : 0)},
+                                {(user.IsBlocked ? 1 : 0)},
+                                NEWID(),
+                                CONVERT(DATETIME, '{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}', 126)
+                            )");
+            ExecuteVoid($@"INSERT INTO {DB}.{UAUTH} (
+                                [ID],
+                                [Hash],
+                                [Salt],
+                                [Session],
+                                [LastIP],
+                                [LastLogin],
+                                [LastUserAgent]
+                            ) VALUES (
+                                {user.ID},
+                                '',
+                                '{auth.Salt}',
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL
+                            )");
 
             user = GetUser(user.ID); // update user
 
@@ -195,7 +227,7 @@ namespace ASC.Server
             if (!ValidateHash(hash))
                 return false;
 
-            ExecuteVoid($"UPDATE {UAUTH} SET [Hash]='{hash.ToUpper()}' WHERE [ID]={id}");
+            ExecuteVoid($"UPDATE {UAUTH} SET [Hash] = '{hash.ToUpper()}' WHERE [ID] = {id} AND [IsBlocked] = 0");
 
             return true;
         }
@@ -203,10 +235,24 @@ namespace ASC.Server
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="session"></param>
+        /// <returns></returns>
+        public bool VerifySession(string session) => ValidateHash(session) ? Execute($@"SELECT 1
+                                                                                        FROM {UAUTH}
+                                                                                        WHERE UPPER([Session]) = '{session.ToUpper()}'
+                                                                                        AND [LastLogin] > CONVERT(DATETIME, '{DateTime.Now.AddMinutes(-5):yyyy-MM-ddTHH:mm:ss.fff}', 126)").Any() : false;
+
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="id"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute($"SELECT 1 FROM {UAUTH} WHERE [ID] = {id} AND UPPER([Hash]) = '{hash.ToUpper()}'").Any() : false;
+        public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute($@"SELECT 1
+                                                                                        FROM {UAUTH}
+                                                                                        WHERE [ID] = {id}
+                                                                                        AND UPPER([Hash]) = '{hash.ToUpper()}'
+                                                                                        AND [IsBlocked] = 0").Any() : false;
 
         /// <summary>
         /// 
@@ -230,7 +276,8 @@ namespace ASC.Server
                                    [LastIP] = '{ip}',
                                    [Session] = '{session}',
                                    [LastLogin] = CONVERT(DATETIME, '{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}', 126)
-                               WHERE [ID]={id}");
+                               WHERE [ID] = {id}
+                               AND [IsBlocked] = 0");
 
                 return true;
             }
@@ -632,12 +679,16 @@ namespace ASC.Server
         /// The user's GUID
         /// </summary>
         public Guid UUID { get; set; } = Guid.Empty;
+        /// <summary>
+        /// The user's registration date
+        /// </summary>
+        public DateTime MemberSince { get; set; } = DateTime.Now;
 
         /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>A string that represents the current object.</returns>
-        public override string ToString() => $"{ID:x16}: '{Name}' ('{Status}', {{{UUID}}}, {IsAdmin}, {IsBlocked})";
+        public override string ToString() => $"{ID:x16}: '{Name}' ('{Status}', {{{UUID}}}, {IsAdmin}, {IsBlocked}, {MemberSince:yyyy-MM-dd HH:mm:ss.ffff})";
     }
 
     /// <summary>

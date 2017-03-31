@@ -23,7 +23,8 @@
       "description": "Your GUID",
       "annotation": "A string which has the format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> where <code>x</code> represents a hexadecimal character"
     },
-    "invalid": "The given GUID and/or password are invalid"
+    "invalid": "The given GUID and/or password are invalid.",
+    "blocked": "The user associated with the given GUID is blocked."
   },
   "global": {
     "title": "Anti-Social Chat Platform",
