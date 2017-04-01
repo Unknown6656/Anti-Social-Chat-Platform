@@ -72,6 +72,23 @@ namespace ASC.Server.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;style&gt;
+        ///&lt;/style&gt;
+        ///&lt;div id=&quot;_chat&quot;&gt;
+        ///    User logged in with:
+        ///    &lt;br/&gt;
+        ///&lt;pre&gt;
+        ///§user§
+        ///&lt;/pre&gt;
+        ///&lt;/div&gt;.
+        /// </summary>
+        internal static string chat {
+            get {
+                return ResourceManager.GetString("chat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;style&gt;
         ///    div#_error, div#_error span {
         ///        font-family: &apos;UnifrakturCook&apos;, cursive;
         ///        align-content: center;
@@ -191,25 +208,28 @@ namespace ASC.Server.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to /*!
-        /// * JavaScript Cookie v2.1.3
-        /// * https://github.com/js-cookie/js-cookie
+        /// * jQuery Cookie Plugin v1.4.1
+        /// * https://github.com/carhartl/jquery-cookie
         /// *
-        /// * Copyright 2006, 2015 Klaus Hartl &amp; Fagner Brack
+        /// * Copyright 2006, 2014 Klaus Hartl
         /// * Released under the MIT license
         /// */
-        ///;(function (factory) {
-        ///	var registeredInModuleLoader = false;
+        ///(function (factory) {
         ///	if (typeof define === &apos;function&apos; &amp;&amp; define.amd) {
-        ///		define(factory);
-        ///		registeredInModuleLoader = true;
+        ///		// AMD (Register as an anonymous module)
+        ///		define([&apos;jquery&apos;], factory);
+        ///	} else if (typeof exports === &apos;object&apos;) {
+        ///		// Node/CommonJS
+        ///		module.exports = factory(require(&apos;jquery&apos;));
+        ///	} else {
+        ///		// Browser globals
+        ///		factory(jQuery);
         ///	}
-        ///	if (typeof exports === &apos;object&apos;) {
-        ///		module.exports = factory();
-        ///		registeredInModuleLoader = true;
-        ///	}
-        ///	if (!registeredInModuleLoader) {
-        ///		var OldCookies = window.Cookies;
-        ///		v [rest of string was truncated]&quot;;.
+        ///}(function ($) {
+        ///
+        ///	var pluses = /\+/g;
+        ///
+        ///	funct [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string jquery_cookie {
             get {
@@ -230,20 +250,21 @@ namespace ASC.Server.Properties {
         /// <summary>
         ///   Looks up a localized string similar to &lt;style&gt;
         ///    #_login code {
-        ///        font-family: monospace;
+        ///        /* border: 1px solid #aaa; */
         ///        background-color: #222;
-        ///        color: #bbb;
+        ///        font-family: monospace;
         ///        display: inline-block;
+        ///        font-style: normal;
+        ///        color: #bbb;
         ///        padding: 3px;
-        ///        border: 1px solid #aaa:
         ///    }
         ///&lt;/style&gt;
         ///&lt;div id=&quot;_login&quot;&gt;
-        ///    &lt;form action=&quot;&apos;§protocol§://§host§:§port§§url§&quot; method=&quot;get&quot;&gt;
+        ///    &lt;form action=&quot;&quot; method=&quot;get&quot;&gt;
         ///        §login_guid_description§:&lt;br /&gt;
         ///        &lt;i&gt;(§login_guid_annotation§)&lt;/i&gt;&lt;br /&gt;
         ///        &lt;input type=&quot;text&quot; id=&quot;_guid&quot; placeholder=&quot;§login_guid_placeholder§&quot; autocomplete=&quot;on&quot; /&gt;&lt;br /&gt;
-        ///        §l [rest of string was truncated]&quot;;.
+        ///        [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string login {
             get {
@@ -255,20 +276,19 @@ namespace ASC.Server.Properties {
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
         ///$(document).ready(function () {
-        ///    var div_main = $(&apos;#main&apos;);
+        ///    session = $.cookie(&quot;_sess&quot;);
         ///
-        ///    session = $.cookie(&quot;_session&quot;);
+        ///    $.cookie(&quot;_lang&quot;, &apos;§lang_code§&apos;);
+        ///    $(&apos;#content&apos;).css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
         ///
-        ///    div_main.css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
+        ///    if (§ssl§) // server-generated
+        ///        $(&apos;#ssl_warning&apos;).css(&apos;display&apos;, &apos;none&apos;);
+        ///    else
+        ///        $(&apos;#ssl_warning a&apos;).attr(&apos;href&apos;, https_uri + &apos;§url§&apos;);
         ///
         ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
         ///    $(&apos;.blurred&apos;).removeClass(&apos;blurred&apos;);
-        ///
-        ///    $(&apos;#_login button&apos;).click(function () {
-        ///        try {
-        ///            var guid = $(&apos;#_guid&apos;).val();
-        ///            var pass = $(&apos;#_password&apos;).val();
-        ///            var id = ajax(&quot;user_by_guid&quot;, &quot;g [rest of string was truncated]&quot;;.
+        ///    $(window).resize(funct [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -280,6 +300,8 @@ namespace ASC.Server.Properties {
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
         ///var sha512;
+        ///var http_uri = &apos;http://§host§:§port_http§&apos;;
+        ///var https_uri = &apos;https://§host§:§port_https§&apos;;
         ///var api_uri = &apos;§protocol§://§host§:§port§/api.json?lang=§lang_code§&apos;;
         ///var session = &apos;&apos;;
         ///.
@@ -325,21 +347,24 @@ namespace ASC.Server.Properties {
         ///    font-size: 12pt;
         ///}
         ///
-        ///body {
-        ///    background-color: #222;
-        ///    color: wheat;
+        ///a {
+        ///    font-size: inherit;
+        ///    color: inherit;
         ///}
         ///
-        ///#noscript {
-        ///    background-color: rgba(85, 51, 51, .6);
-        ///    text-align: center;
-        ///    line-height: 100%;
-        ///    z-index: 6000001;
-        ///    position: fixed;
-        ///    height: 100%;
-        ///    width: 100%;
-        ///    bottom: 0px;
-        ///    rig [rest of string was truncated]&quot;;.
+        ///.blurred {
+        ///    filter: blur(10px);
+        ///}
+        ///
+        ///.code {
+        ///    font-family: &apos;Ubuntu Mono&apos;, &apos;Courier New&apos;, &apos;Lucida Console&apos;, Courier, Consolas, monospace;
+        ///    white-space: pre;
+        ///    text-align: left;
+        ///}
+        ///
+        ///input,
+        ///button {
+        ///    [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {

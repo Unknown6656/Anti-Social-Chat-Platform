@@ -5,6 +5,7 @@
   },
   "error": {
     "noscript": "Javascript muss aktiviert sein, um diese Webseite vollständig nutzen zu können.",
+    "webkit": "You should use a webkit-based browser to enjoy all of the page's features.", // TODO
     "error": "Fehler",
     "500": "Dienst derzeitig nicht verfügbar",
     "400": "Ungültige Operation",
@@ -24,9 +25,16 @@
       "annotation": "Eine Zeichenkette, welches das Format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> besitzt, wobei <code>x</code> ein hexadezimales Zeichen darstellt"
     },
     "invalid": "Die Kombination aus GUID und Passwort ist ungültig.",
-    "blocked": "Der Benutzer mit der gegebenen GUID wurde blockiert."
+    "blocked": "Der Benutzer mit der gegebenen GUID ist gesperrt und muss von einem Administrator freigeschaltet werden.",
+    "explanation": "You are not logged in. Please use the form below to log into your account." // TODO
   },
-
+  "search": {
+    "username": "Benutzername",
+    "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:", // TODO
+    "membersince": "Member since", // TODO
+    "admin": "Administrator",
+    "blocked": "Gesperrt"
+  },
   "global": {
     "title": "Antisoziale Chat Plattform",
     "descr": "Dies ist die offizielle anti-soziale Chat Plattform"

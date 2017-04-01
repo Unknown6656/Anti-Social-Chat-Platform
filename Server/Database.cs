@@ -96,6 +96,9 @@ namespace ASC.Server
         {
             user.ID = NextID(USERS);
 
+            while (HasUser(user.ID))
+                ++user.ID;
+
             DBUserAuthentification auth = new DBUserAuthentification
             {
                 ID = user.ID,
@@ -120,7 +123,7 @@ namespace ASC.Server
                                 {(user.IsAdmin ? 1 : 0)},
                                 {(user.IsBlocked ? 1 : 0)},
                                 NEWID(),
-                                CONVERT(DATETIME, '{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}', 126)
+                                GETDATE()
                             )");
             ExecuteVoid($@"INSERT INTO {DB}.{UAUTH} (
                                 [ID],
@@ -155,7 +158,12 @@ namespace ASC.Server
             if (!ValidateUser(user))
                 return false;
 
-            ExecuteVoid($@"UPDATE {USERS} SET [Name]='{user.Name}',[Status]='{user.Status}',[IsAdmin]='{(user.IsAdmin ? 1 : 0)}',[IsBlocked]='{(user.IsBlocked ? 1 : 0)}' WHERE [ID] = {user.ID}");
+            ExecuteVoid($@"UPDATE {USERS}
+                           SET [Name] = '{user.Name}',
+                               [Status] = '{user.Status}',
+                               [IsAdmin] = '{(user.IsAdmin ? 1 : 0)}',
+                               [IsBlocked] = '{(user.IsBlocked ? 1 : 0)}'
+                           WHERE [ID] = {user.ID}");
 
             return true;
         }
@@ -165,6 +173,13 @@ namespace ASC.Server
         /// </summary>
         /// <returns>List of all admins</returns>
         public DBUser[] GetAdmins() => Execute<DBUser>($"SELECT * FROM {USERS} WHERE [IsAdmin] = 1 AND [IsBlocked] = 0").ToArray();
+
+        /// <summary>
+        /// Returns whether the user associated with the given user ID exists
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>Existance</returns>
+        public bool HasUser(long id) => Execute($"SELECT COUNT(0) AS [ID] FROM {USERS} WHERE [ID] = {id}").FirstOrDefault(_ => (long)_["ID"] == 1) > 0;
 
         /// <summary>
         /// Returns the user associated with the given user ID
@@ -199,16 +214,26 @@ namespace ASC.Server
                                                                      c.Name ascending
                                                              select (c, sim)).Distinct(new UserSearchResultComparer());
             (DBUser, double, double, (string, string))[] res = new(DBUser, double, double, (string, string))[match.Count()];
+
             int i = 0;
 
             foreach ((DBUserComparison comp, double sim) in match)
-                res[i++] = (comp, comp.Difference, sim, (org, comp.Soundex));
+            {
+                var elem = (comp as DBUser, comp.Difference, sim, (org, comp.Soundex));
+
+                if (perfectmatch(comp))
+                    return new(DBUser, double, double, (string, string))[1] { elem };
+                else
+                    res[i++] = elem;
+            }
 
             return res;
+
+            bool perfectmatch(DBUser user) => user?.Name?.ToLower() == name?.ToLower();
         }
 
         internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
-                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""\=\`\´]+$", out _) &&
+                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""]+$", out _) &&
                                                    !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
 
         internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
@@ -248,11 +273,7 @@ namespace ASC.Server
         /// <param name="id"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute($@"SELECT 1
-                                                                                        FROM {UAUTH}
-                                                                                        WHERE [ID] = {id}
-                                                                                        AND UPPER([Hash]) = '{hash.ToUpper()}'
-                                                                                        AND [IsBlocked] = 0").Any() : false;
+        public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute(GetScript(nameof(VerifyUser), id, hash.ToUpper())).Any() : false;
 
         /// <summary>
         /// 
@@ -271,13 +292,7 @@ namespace ASC.Server
             {
                 session = Authentification.GenerateSaltString();
 
-                ExecuteVoid($@"UPDATE {UAUTH}
-                               SET [LastUserAgent] = '{ToB64(useragent)}',
-                                   [LastIP] = '{ip}',
-                                   [Session] = '{session}',
-                                   [LastLogin] = CONVERT(DATETIME, '{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}', 126)
-                               WHERE [ID] = {id}
-                               AND [IsBlocked] = 0");
+                ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id));
 
                 return true;
             }
@@ -299,9 +314,16 @@ namespace ASC.Server
         /// <returns></returns>
         public DBUserAuthentification GetAuth(long id) => Execute<DBUserAuthentification>($"SELECT * FROM {UAUTH} WHERE [ID] = {id}").Select(DecodeUAuth).First();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="session"></param>
+        /// <returns></returns>
+        public DBUser GetUserBySession(string session) => Execute<DBUser>(GetScript(nameof(GetUserBySession), session)).FirstOrDefault();
+
         internal DBUserAuthentification DecodeUAuth(DBUserAuthentification auth)
         {
-            auth.LastUserAgent = FromB64(auth.LastUserAgent);
+            auth.LastUserAgent = SQLDecode(auth.LastUserAgent);
 
             return auth;
         }
@@ -495,9 +517,9 @@ namespace ASC.Server
                         yield return obj;
             }
 
-            internal static string ToB64(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text ?? ""));
+            internal static string SQLEncode(string text) => Uri.EscapeDataString(text ?? "");
 
-            internal static string FromB64(string b64) => Encoding.UTF8.GetString(Convert.FromBase64String(b64 ?? ""));
+            internal static string SQLDecode(string escaped) => Uri.UnescapeDataString(escaped ?? "");
 
             internal static string GetScript(string name) => File.ReadAllText($@"{Directory.GetCurrentDirectory()}\{ScriptFolder}\{name}.sql");
 

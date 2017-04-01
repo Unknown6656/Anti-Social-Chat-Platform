@@ -65,7 +65,6 @@ namespace ASC.Server
                 ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), false, "id"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), true, "new"),
                 ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
-
                 ["auth_test"] = new ASCOperation(null, true) // TESTING ONLY
             };
         }
@@ -291,6 +290,8 @@ namespace ASC.Server
                         lang = langc.Value;
                 }
 
+                lang = lang ?? "en";
+
                 if (!LanguagePacks.ContainsKey(lang))
                     lang = (from lraw in request.UserLanguages
                             let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
@@ -347,11 +348,7 @@ namespace ASC.Server
                                     else if (contains(request, "session", out session))
                                         res &= tSQL.VerifySession(session); // TODO
                                     else
-                                    {
-                                        Cookie sessc = request.Cookies["_sess"];
-
-                                        res &= sessc == null ? false : tSQL.VerifySession(session = sessc.Value); // TODO
-                                    }
+                                        res &= getsessionuser() != null;
 
                                     if (!res)
                                         return error("", StatusCode._403);
@@ -377,7 +374,24 @@ namespace ASC.Server
                         return error("An operation must be specified.");
                 }
 
-                if (session == null)
+                DBUser user = getsessionuser();
+
+                if (user != null)
+                {
+                    DBUserAuthentification auth = tSQL.GetAuth(user.ID);
+
+                    tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, out session); // update login
+
+                    auth.Session = session;
+
+                    vars["user"] = JsonConvert.SerializeObject(user, Formatting.Indented);
+                    vars["user_auth"] = JsonConvert.SerializeObject(auth, Formatting.Indented);
+                    vars["user_session"] = session;
+                    vars["inner"] = FetchResource(Resources.chat, vars);
+
+                    response.SetCookie(new Cookie("_sess", session));
+                }
+                else
                     vars["inner"] = FetchResource(Resources.login, vars);
 
                 return FetchResource(Resources.frame, vars);
@@ -392,6 +406,13 @@ namespace ASC.Server
                         Session = session,
                         Data = msg
                     });
+                }
+
+                DBUser getsessionuser()
+                {
+                    Cookie sessc = request.Cookies["_sess"];
+
+                    return tSQL.VerifySession(session = sessc?.Value ?? "") ? tSQL.GetUserBySession(session) : null;
                 }
             }
 

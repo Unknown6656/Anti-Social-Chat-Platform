@@ -40,7 +40,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\server.xml</DocumentationFile>
     <LangVersion>7</LangVersion>
-    <NoWarn>TS1127, TS1128</NoWarn>
+    <!-- <NoWarn>TS1127, TS1128</NoWarn> -->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -117,11 +117,21 @@
     <Content Include="Resources\ico_ru.png" />
     <Content Include="Resources\ico_zh.png" />
     <Content Include="Resources\jquery.cookie.js" />
+    <Content Include="Resources\chat.html" />
     <Content Include="Resources\login.html" />
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />
     <Content Include="Resources\sha512.js" />
     <Content Include="SQLScripts\dbo.Functions.Trim.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\GetUserBySession.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\VerifyUser.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\Login.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="SQLScripts\FindUsers.sql">

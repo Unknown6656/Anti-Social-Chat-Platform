@@ -8,13 +8,13 @@ FROM (SELECT TOP(20)
 			SOUNDEX([Name]) as Soundex,
 			-1 as Difference
 	  FROM [Users]
-	  WHERE (@name LIKE ('%' + [dbo].TRIM([Name]) + '%')) OR
-		    ([dbo].TRIM([Name]) LIKE ('%' + @name + '%'))
+	  WHERE ([dbo].TRIM([Name]) LIKE ('%' + @name + '%'))
+	  -- OR (@name LIKE ('%' + [dbo].TRIM([Name]) + '%'))
 	  UNION
-	  SELECT TOP(20)
+	  SELECT TOP(5)
 			*,
 			SOUNDEX([Name]) as Soundex,
 			DIFFERENCE(@name, [Name]) as Difference
 	  FROM [Users]
-	  WHERE DIFFERENCE(@name, [Name]) < 3
+	  WHERE DIFFERENCE(@name, [Name]) < 2
 ) AS users

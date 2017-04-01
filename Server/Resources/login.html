@@ -8,7 +8,64 @@
         color: #bbb;
         padding: 3px;
     }
+
+    #_guids {
+        background-color: #333;
+        border: 1px solid #666;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        padding: 6px;
+        height: 500px;
+        width: calc(100% - 12px);
+    }
+
+    #_guids > div {
+        border: 1px solid #888;
+        background: #524a3b;
+        border-radius: 6px;
+        position: relative;
+        margin: 6px;
+    }
+
+    #_guids > div > div {
+        /*position: absolute;*/
+        padding: 8px;
+    }
+        
+    #_guids > div.admin {
+        background: #755436;
+    }
+
+    #_guids > div.blocked > div {
+        filter: blur(4px);
+    }
+
+    #_guids div.blocked::after {
+        vertical-align: middle;
+        content: "§search_blocked§";
+        position: absolute;
+        text-align: center;
+        line-height: 100%;
+        background: repeating-linear-gradient(-40deg,
+                                                rgba(255, 3, 3, 0.27),
+                                                rgba(255, 3, 3, 0.27) 5px,
+                                                rgba(115, 0, 0, 0.28) 5px,
+                                                rgba(115, 0, 0, 0.28) 10px);
+        padding: 15px 0px 0px 0px;
+        font-weight: bold;
+        font-size: 1.25em;
+        display: block;
+        filter: none;
+        height: calc(100% - 15px);
+        color: #edd;
+        width: 100%;
+        top: 0px;
+    }
 </style>
+<div class="warning">
+    §login_explanation§
+</div>
+<br/>
 <div id="_login">
     <form action="" method="get">
         §login_guid_description§:<br />
@@ -19,4 +76,14 @@
         <br />
         <input type="submit" value="§login_button§"/>
     </form>
+</div>
+<br />
+<hr/>
+<br />
+<div id="_search">
+    §search_forgot§
+    <br/>
+    <input type="text" placeholder="§search_username§" />
+    <br/>
+    <div id="_guids"></div>
 </div>

@@ -5,6 +5,7 @@
   },
   "error": {
     "noscript": "You need to enable Javascript to use this website properly.",
+    "webkit": "You should use a webkit-based browser to enjoy all of the page's features.",
     "error": "Error",
     "500": "Service currently not available",
     "400": "Invalid operation",
@@ -24,7 +25,15 @@
       "annotation": "A string which has the format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> where <code>x</code> represents a hexadecimal character"
     },
     "invalid": "The given GUID and/or password are invalid.",
-    "blocked": "The user associated with the given GUID is blocked."
+    "blocked": "The user associated with the given GUID is blocked and must be unblocked by an administrator.",
+    "explanation": "You are not logged in. Please use the form below to log into your account."
+  },
+  "search": {
+    "username": "Username",
+    "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:",
+    "membersince": "Member since",
+    "admin": "Administrator",
+    "blocked": "Blocked"
   },
   "global": {
     "title": "Anti-Social Chat Platform",
