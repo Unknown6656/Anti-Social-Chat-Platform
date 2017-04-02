@@ -34,28 +34,34 @@
                         left stuff
                     </td>
                     <td style="width: calc(100% - 200px)" align="center">
-                        <span id="title">
+                        <span id="title" class="frakur">
                             §global_title§
                         </span>
                     </td>
                     <td width="100px" align="right">
-                        <img src="res~ico_§lang_code§~image/png" title="§lang_name§ (§lang_code§)" />
+                        <img src="res~ico_§lang_code§~image/png" title="§lang_name§ (§lang_code§)" id="flag"/>
                     </td>
                 </tr>
             </table>
         </div>
-        <div id="content">
+        <div id="content" class="blurred">
             <div id="ssl_warning" class="warning">
                 <a>
                     §unsafe§
                 </a>
             </div>
-            <div id="main" class="blurred">
+            <div id="main">
                 §inner§
             </div>
         </div>
         <div id="footer" class="blurred">
         </div>
+        <div id="lang_change_form">
+            <span class="frakur">§lang_change_title§:</span>
+            <br/>
+            <div class="lang_container"></div>
+        </div>
+        <div id="lang_change_bg"></div>
         <script type="text/javascript" src="res~jquery311min~text/javascript"></script>
         <script type="text/javascript" src="res~jquery_cookie~text/javascript"></script>
         <script type="text/javascript" src="res~sha512~text/javascript"></script>

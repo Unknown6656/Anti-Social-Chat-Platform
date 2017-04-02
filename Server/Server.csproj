@@ -182,6 +182,9 @@
     <EmbeddedResource Include="ASC.cer">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <Content Include="Languages\fr.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <EmbeddedResource Include="Unknown6656.cer">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

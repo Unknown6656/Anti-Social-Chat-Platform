@@ -1,7 +1,13 @@
 ﻿{
   "lang": {
+    "beta": false,
     "name": "Deutsch",
-    "code": "de"
+    "iname": "German",
+    "code": "de",
+    "change": {
+      "hover": "Sprache ändern",
+      "title": "Sprachauswahl"
+    }
   },
   "error": {
     "noscript": "Javascript muss aktiviert sein, um diese Webseite vollständig nutzen zu können.",
@@ -33,7 +39,7 @@
     "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:", // TODO
     "membersince": "Member since", // TODO
     "admin": "Administrator",
-    "blocked": "Gesperrt"
+    "locked": "Gesperrt"
   },
   "global": {
     "title": "Antisoziale Chat Plattform",

@@ -1,0 +1,48 @@
+﻿{
+  "lang": {
+    "beta": true,
+    "name": "Français",
+    "iname": "French",
+    "code": "fr",
+    "change": {
+      "hover": "Changer de langue",
+      "title": "Sélection de la langue"
+    }
+  },
+  "error": {
+    "noscript": "Vous devez activer Javascript pour utiliser ce site correctement.",
+    "webkit": "Vous devez utiliser un navigateur basé sur webkit pour profiter de toutes les fonctionnalités de la page.",
+    "error": "Erreur",
+    "500": "Service actuellement indisponible",
+    "400": "Opération invalide",
+    "403": "Permission refusée",
+    "404": "Ressource introuvable"
+  },
+  "unsafe": "Votre connexion n'est pas sécurisée. Envisager de se connecter à ce site via SSL.",
+  "login": {
+    "button": "Login",
+    "password": {
+      "placeholder": "Mot de passe",
+      "description": "Votre mot de passe"
+    },
+    "guid": {
+      "placeholder": "Identifiant GUID d'utilisateur",
+      "description": "Votre GUID",
+      "annotation": "Une chaîne qui a le format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> où <code>x</code> représente un caractère hexadécimal"
+    },
+    "invalid": "L'identifiant GUID et/ou le mot de passe donnés sont invalides.",
+    "blocked": "L'utilisateur associé à la GUID donnée est bloqué et doit être débloqué par un administrateur.",
+    "explanation": "Vous n'êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte."
+  },
+  "search": {
+    "username": "Nom d'utilisateur",
+    "forgot": "Vous avez oublié votre GUID?<br/>Vous pouvez rechercher ici votre GUID en utilisant votre nom visible:",
+    "membersince": "Membre depuise",
+    "admin": "Administrateur",
+    "locked": "Bloqué"
+  },
+  "global": {
+    "title": "Plate-forme de chat anti-social",
+    "descr": "C'est la plate-forme officielle de chat anti-social"
+  }
+}

@@ -54,6 +54,17 @@ namespace ASC.Server
 
             Operations = new Dictionary<string, ASCOperation>
             {
+                ["lang_pack"] = new ASCOperation((req, res, vals, db) => LanguagePacks[vals["code"].ToLower()], false, "lang"),
+                ["lang_info"] = new ASCOperation((req, res, vals, db) =>
+                {
+                    Dictionary<string, string> pack = LanguagePacks[vals["code"].ToLower()];
+
+                    return new {
+                        Name = pack["lang_name"],
+                        EnglishName = pack["lang_iname"],
+                        IsBeta = bool.Parse(pack["lang_beta"].ToLower()),
+                    };
+                }, false, "lang"),
                 ["user_by_name"] = new ASCOperation((req, res, vals, db) => db.FindUsers(vals["name"]), false, "name"),
                 ["user_by_id"] = new ASCOperation((req, res, vals, db) => db.GetUser(long.Parse(vals["id"])), false, "id"),
                 ["user_by_guid"] = new ASCOperation((req, res, vals, db) => db.GetUser(Guid.Parse(vals["guid"])), false, "guid"),
@@ -302,6 +313,7 @@ namespace ASC.Server
                 foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
                     vars[kvp.Key] = kvp.Value;
 
+                vars["lang_avail"] = string.Join(", ", from lp in LanguagePacks.Keys select $"\"{lp}\"");
                 vars["url"] = url;
                 vars["ssl"] = SSL(port).ToString().ToLower(); // JavaScript being bitchy
                 vars["time"] = now;

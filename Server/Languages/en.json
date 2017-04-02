@@ -1,7 +1,13 @@
 ﻿{
   "lang": {
+    "beta": false,
     "name": "English",
-    "code": "en"
+    "iname": "English",
+    "code": "en",
+    "change": {
+      "hover": "Change language",
+      "title": "Language selection"
+    }
   },
   "error": {
     "noscript": "You need to enable Javascript to use this website properly.",

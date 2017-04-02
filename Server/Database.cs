@@ -94,6 +94,9 @@ namespace ASC.Server
         /// <param name="user">ASC user</param>
         public DBUserAuthentification AddUser(ref DBUser user)
         {
+            if (!CanChangeName(user?.Name) || user is null)
+                return null;
+
             user.ID = NextID(USERS);
 
             while (HasUser(user.ID))
@@ -145,6 +148,8 @@ namespace ASC.Server
 
             user = GetUser(user.ID); // update user
 
+            $"Added user {{{user.UUID}}}".Ok();
+
             return auth;
         }
 
@@ -155,7 +160,9 @@ namespace ASC.Server
         /// <returns>Returns whether the operation was successful</returns>
         public bool UpdateUser(DBUser user)
         {
-            if (!ValidateUser(user))
+            if (user is null || 
+                !CanChangeName(user?.Name) ||
+                !ValidateUser(user))
                 return false;
 
             ExecuteVoid($@"UPDATE {USERS}
@@ -164,6 +171,8 @@ namespace ASC.Server
                                [IsAdmin] = '{(user.IsAdmin ? 1 : 0)}',
                                [IsBlocked] = '{(user.IsBlocked ? 1 : 0)}'
                            WHERE [ID] = {user.ID}");
+
+            $"Updated user {{{user.UUID}}}".Ok();
 
             return true;
         }
@@ -232,6 +241,8 @@ namespace ASC.Server
             bool perfectmatch(DBUser user) => user?.Name?.ToLower() == name?.ToLower();
         }
 
+        internal bool CanChangeName(string newname) => !Execute($"SELECT 0 FROM {USERS} WHERE UPPER([Name]) = '{newname?.ToUpper() ?? ""}'").Any();
+
         internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
                                                    ASCServer.regex(user?.Status ?? "", @"^[^\'\""]+$", out _) &&
                                                    !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
@@ -293,6 +304,8 @@ namespace ASC.Server
                 session = Authentification.GenerateSaltString();
 
                 ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id));
+
+                $"User 0x{id:x16} successfully logged in.".Msg();
 
                 return true;
             }

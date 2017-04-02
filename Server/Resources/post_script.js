@@ -1,6 +1,11 @@
 /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
 
 $(document).ready(function () {
+    var inner = $('#header, #content, #footer');
+
+    $('#noscript').css('display', 'none');
+    inner.removeClass('blurred');
+
     session = $.cookie("_sess");
 
     $.cookie("_lang", '§lang_code§');
@@ -15,9 +20,6 @@ $(document).ready(function () {
         $('#ssl_warning').css('display', 'none');
     else
         $('#ssl_warning a').attr('href', https_uri + '§url§');
-
-    $('#noscript').css('display', 'none');
-    $('.blurred').removeClass('blurred');
     $(window).resize(function () {
         $('#ssl_warning').css('top', $('#header').height() + 20);
     });
@@ -63,22 +65,49 @@ $(document).ready(function () {
             var user = item.Item1;
 
             listview.html(`${listview.html()}
-<div class="${user.IsAdmin ? `admin` : ``} ${user.IsBlocked ? `blocked` : ``}">
+<div class="${user.IsAdmin ? `admin` : ``} ${user.IsBlocked ? `locked` : ``}">
     <div>
-        <b>${user.Name}${user.IsAdmin ? ` [§search_admin§]` : ``}${user.IsBlocked ? ` [§search_blocked§]` : ``}</b> &#160; 
+        <b>${user.Name}${user.IsAdmin ? ` [§search_admin§]` : ``}${user.IsBlocked ? ` [§search_locked§]` : ``}</b> &#160; 
         <i class="code">{${user.UUID.toUpperCase()}}</i><br/>
         §search_membersince§: <span class="code">${user.MemberSince}</span>
     </div>
 </div>`);
         });
     });
+    $('#header #flag').click(function () {
+        $('#lang_change_bg, #lang_change_form').css('display', 'block');
+        $('#lang_change_form > div.lang_container').height(270 - $('#lang_change_form > span').height());
+        inner.addClass('blurred');
+    });
+    $('#lang_change_bg').click(function () {
+        $('#lang_change_bg, #lang_change_form').css('display', 'none');
+        inner.removeClass('blurred');
+    });
+
+    avail_lang.forEach(function (lang) {
+        var nfo = ajax('lang_info', `code=${lang}`);
+
+        if (nfo.Success)
+            $('#lang_change_form > div.lang_container').html(`${$('#lang_change_form > div.lang_container').html()}
+<div class="lang_option" data-lang="${lang}" style="background: url('res~ico_${lang}~image/png') no-repeat #666;">
+    ${lang.toUpperCase()}/${nfo.Data.Name} - ${nfo.Data.EnglishName} ${nfo.Data.IsBeta ? ` &#160; <i>(beta)</i>` : ``}
+</div>`);
+    });
+    $('#lang_change_form > div.lang_container > div.lang_option').click(function () {
+        var lang = $(this).attr('data-lang');
+
+        $.cookie("_lang", lang);
+
+        window.location.reload();
+    });
 });
 
 function ajax(operation, params) {
+    var uri = `${api_uri}&session=${session}&operation=${operation}&${params}`;
     var result;
 
     $.ajax({
-        url: `${api_uri}&session=${session}&operation=${operation}&${params}`,
+        url: uri,
         async: false,
         cache: false,
         dataType: 'json',

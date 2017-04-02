@@ -302,7 +302,7 @@ namespace ASC.Server
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
                     {// testing
-                        foreach (string s in @"The original unit was raised June 8, 1776, at Williamsburg, Virginia, under the command of Henry Light Horse Harr Lee for service ".Replace('.', ',').Replace('\'', ',').Replace(",", "").Split())
+                        foreach (string s in @"The original unit was raised June 8, 1776, ar Lee for service ".Replace('.', ',').Replace('\'', ',').Replace(",", "").Split())
                         {
                             DBUser user = new DBUser {
                                 IsAdmin = s.Length % 4 == 3,
