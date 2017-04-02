@@ -222,147 +222,10 @@ namespace ASC.Server
                     return SendError(request, response, vars, StatusCode._500, "");
 
             #endregion
-            #region REQUESTS HANDLING
+            #region RESOURCE REQUEST
 
             if (Regex.IsMatch(url, @"[\\\/]?favicon\.ico$", RegexOptions.IgnoreCase))
                 url = "res~favicon~image/x-icon";
-            
-            bool mobile = IsMobile(request);
-            string session = null;
-            DBUser user;
-
-            SetStatusCode(response, StatusCode._200);
-
-            if (contains(request, "lang", out string lang))
-                lang = lang?.ToLower();
-            else
-            {
-                Cookie langc = request.Cookies["_lang"];
-
-                if (langc?.Value?.Length > 0)
-                    lang = langc.Value;
-            }
-
-            lang = lang ?? "en";
-
-            if (!LanguagePacks.ContainsKey(lang))
-                lang = (from lraw in request.UserLanguages
-                        let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
-                        let lcd = (lng.Contains('-') ? lng.Split('-')[0] : lng).ToLower().Trim()
-                        where LanguagePacks.ContainsKey(lcd)
-                        select lcd).FirstOrDefault();
-
-            foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
-                vars[kvp.Key] = kvp.Value;
-
-            vars["lang_avail"] = string.Join(", ", from lp in LanguagePacks.Keys select $"\"{lp}\"");
-            vars["mobile"] = ToJSbool(mobile);
-            vars["url"] = url;
-            vars["ssl"] = ToJSbool(SSL(port)); 
-            vars["time"] = now;
-            vars["port"] = port;
-            vars["port_http"] = Ports.HTTP;
-            vars["port_https"] = Ports.HTTPS;
-            vars["protocol"] = request.Url.Scheme;
-            vars["host"] = request.Url.Host;
-            vars["addr"] = request.LocalEndPoint.Address;
-            vars["user_agent"] = request.UserAgent;
-            vars["user_host"] = request.UserHostName;
-            vars["user_addr"] = request.UserHostAddress;
-
-            if (regex(request.Url.LocalPath, @"^[\\\/]?api\.json$", out _))
-            {
-#if DEBUG
-                $"API access: {url}".Info();
-#endif
-                if (contains(request, "operation", out string op))
-                    if (Operations.ContainsKey(op = op.ToLower()))
-                    {
-                        ASCOperation ascop = Operations[op];
-                        Dictionary<string, string> values = new Dictionary<string, string>();
-
-                        foreach (string key in request.QueryString.AllKeys)
-                            values[key] = request.QueryString[key];
-
-                        IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
-
-                        if (missing.Any())
-                            return error($"A value for '{missing.First()}' is required when using the operation '{op}'.");
-
-                        try
-                        {
-                            if (ascop.Privilege > ASCOperationPrivilege.Regular)
-                            {
-                                bool res = contains(request, "id", out string sid);
-
-                                if (contains(request, "hash", out string hash))
-                                    res &= verify(request, tSQL, sid, hash, out session);
-                                else if (contains(request, "session", out session))
-                                    res &= tSQL.VerifySession(session); // TODO
-                                else
-                                    res &= ((user = getsessionuser()) != null)
-                                        & (ascop.Privilege == ASCOperationPrivilege.Administrator ? user.IsAdmin : true);
-
-                                if (!res)
-                                    return error($"An {ascop.Privilege.ToString().ToLower()} account is required to perform this operation", StatusCode._403);
-                            }
-
-                            vars["user_session"] = session;
-
-                            return ToJSON(new
-                            {
-                                Success = true,
-                                Session = session,
-                                Data = ascop.Handler(request, response, values, tSQL)
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            return error($"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
-                        }
-                    }
-                    else
-                        return error($"The operation '{op}' is unknown.");
-                else
-                    return error("An operation must be specified.");
-            }
-
-            if ((user = getsessionuser()) != null)
-            {
-                DBUserAuthentification auth = tSQL.GetAuth(user.ID);
-
-                tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, out session); // update login
-
-                auth.Session = session;
-
-                vars["user"] = JsonConvert.SerializeObject(user, Formatting.Indented);
-                vars["user_auth"] = JsonConvert.SerializeObject(auth, Formatting.Indented);
-                vars["user_session"] = session;
-                vars["inner"] = FetchResource(Resources.chat, vars);
-
-                response.SetCookie(new Cookie("_sess", session));
-            }
-            else
-            {
-                vars["user"] =
-                vars["user_auth"] = "undefined";
-                vars["inner"] = FetchResource(Resources.login, vars);
-            }
-
-            if (mobile)
-            {
-                vars["style_desktop"] = "";
-                vars["style_mobile"] = FetchResource(Resources.style_mobile, vars);
-            }
-            else
-            {
-                vars["style_desktop"] = FetchResource(Resources.style_desktop, vars);
-                vars["style_mobile"] = "";
-            }
-
-            vars["pre_script"] = FetchResource(Resources.pre_script, vars);
-            vars["post_script"] = FetchResource(Resources.post_script, vars);
-            vars["style"] = FetchResource(Resources.style, vars);
 
             if (regex(url, @"res\~(?<res>.+)\~(?<type>[\w\-\/\-\+]+)\b?", out Match m))
             {
@@ -424,8 +287,162 @@ namespace ASC.Server
 
                 return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
             }
+
+            #endregion
+            #region LANGUAGE HANDLING
+
+            bool mobile = IsMobile(request);
+            string session = null;
+            DBUser user;
+
+            SetStatusCode(response, StatusCode._200);
+
+            if (contains(request, "lang", out string lang))
+                lang = lang?.ToLower();
             else
-                return FetchResource(Resources.frame, vars);
+            {
+                Cookie langc = request.Cookies["_lang"];
+
+                if (langc?.Value?.Length > 0)
+                    lang = langc.Value;
+            }
+
+            lang = lang ?? "en";
+
+            if (!LanguagePacks.ContainsKey(lang))
+                lang = (from lraw in request.UserLanguages
+                        let lng = lraw.Contains(';') ? lraw.Split(';')[0] : lraw
+                        let lcd = (lng.Contains('-') ? lng.Split('-')[0] : lng).ToLower().Trim()
+                        where LanguagePacks.ContainsKey(lcd)
+                        select lcd).FirstOrDefault();
+
+            foreach (KeyValuePair<string, string> kvp in LanguagePacks[lang ?? "en"])
+                vars[kvp.Key] = kvp.Value;
+
+            #endregion
+            #region ENVIRONMENT VARIABLES
+
+            vars["lang_avail"] = string.Join(", ", from lp in LanguagePacks.Keys select $"\"{lp}\"");
+            vars["mobile"] = ToJSbool(mobile);
+            vars["url"] = url;
+            vars["ssl"] = ToJSbool(SSL(port)); 
+            vars["time"] = now;
+            vars["port"] = port;
+            vars["port_http"] = Ports.HTTP;
+            vars["port_https"] = Ports.HTTPS;
+            vars["protocol"] = request.Url.Scheme;
+            vars["host"] = request.Url.Host;
+            vars["addr"] = request.LocalEndPoint.Address;
+            vars["user_agent"] = request.UserAgent;
+            vars["user_host"] = request.UserHostName;
+            vars["user_addr"] = request.UserHostAddress;
+
+            #endregion
+            #region OPERATION REQUEST
+
+            if (regex(request.Url.LocalPath, @"^[\\\/]?api\.json$", out _))
+            {
+#if DEBUG
+                $"API access: {url}".Info();
+#endif
+                if (contains(request, "operation", out string op))
+                    if (Operations.ContainsKey(op = op.ToLower()))
+                    {
+                        ASCOperation ascop = Operations[op];
+                        Dictionary<string, string> values = new Dictionary<string, string>();
+
+                        foreach (string key in request.QueryString.AllKeys)
+                            values[key] = request.QueryString[key];
+
+                        IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
+
+                        if (missing.Any())
+                            return error($"A value for '{missing.First()}' is required when using the operation '{op}'.");
+
+                        try
+                        {
+                            if (ascop.Privilege > ASCOperationPrivilege.Regular)
+                            {
+                                bool res = contains(request, "id", out string sid);
+
+                                if (contains(request, "hash", out string hash))
+                                    res &= verify(request, tSQL, sid, hash, out session);
+                                else if (contains(request, "session", out session))
+                                    res &= tSQL.VerifySession(session); // TODO
+                                else
+                                    res &= ((user = getsessionuser()) != null)
+                                        & (ascop.Privilege == ASCOperationPrivilege.Administrator ? user.IsAdmin : true);
+
+                                if (!res)
+                                    return error($"An {ascop.Privilege.ToString().ToLower()} account is required to perform this operation", StatusCode._403);
+                            }
+
+                            vars["user_session"] = session;
+
+                            return ToJSON(new
+                            {
+                                Success = true,
+                                Session = session,
+                                Data = ascop.Handler(request, response, values, tSQL)
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            return error($"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+                        }
+                    }
+                    else
+                        return error($"The operation '{op}' is unknown.");
+                else
+                    return error("An operation must be specified.");
+            }
+
+            #endregion
+            #region SESSION + AUTHENTIFICATION VARIABLES
+
+            if ((user = getsessionuser()) != null)
+            {
+                DBUserAuthentification auth = tSQL.GetAuth(user.ID);
+
+                tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, out session); // update login
+
+                auth.Session = session;
+
+                vars["user"] = JsonConvert.SerializeObject(user, Formatting.Indented);
+                vars["user_auth"] = JsonConvert.SerializeObject(auth, Formatting.Indented);
+                vars["user_session"] = session;
+                vars["inner"] = FetchResource(Resources.chat, vars);
+
+                response.SetCookie(new Cookie("_sess", session));
+            }
+            else
+            {
+                vars["user"] =
+                vars["user_auth"] = "undefined";
+                vars["inner"] = FetchResource(Resources.login, vars);
+            }
+
+            #endregion
+            #region SCRIPT + STYLE VARIABLES
+
+            if (mobile)
+            {
+                vars["style_desktop"] = "";
+                vars["style_mobile"] = FetchResource(Resources.style_mobile, vars);
+            }
+            else
+            {
+                vars["style_desktop"] = FetchResource(Resources.style_desktop, vars);
+                vars["style_mobile"] = "";
+            }
+
+            vars["pre_script"] = FetchResource(Resources.pre_script, vars);
+            vars["post_script"] = FetchResource(Resources.post_script, vars);
+            vars["style"] = FetchResource(Resources.style, vars);
+
+            #endregion
+            
+            return FetchResource(Resources.frame, vars);
 
             HTTPResponse error(string msg, StatusCode code = StatusCode._400)
             {
@@ -438,15 +455,12 @@ namespace ASC.Server
                     Data = msg
                 });
             }
-
             DBUser getsessionuser()
             {
                 Cookie sessc = request.Cookies["_sess"];
 
                 return tSQL.VerifySession(session = sessc?.Value ?? "") ? tSQL.GetUserBySession(session) : null;
             }
-
-            #endregion
         }
 
         internal HTTPResponse SendError(HttpListenerRequest request, HttpListenerResponse response, Dictionary<string, object> vars, StatusCode code, string msg = null)
