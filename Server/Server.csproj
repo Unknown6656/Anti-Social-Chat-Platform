@@ -198,6 +198,9 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Include="recaptcha.key">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\app.webmanifest">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

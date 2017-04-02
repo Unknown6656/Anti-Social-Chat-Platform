@@ -155,6 +155,8 @@ namespace ASC.Server
             return auth;
         }
 
+        public void DeleteUser(long id) => ExecuteVoid($"DELETE FROM {USERS} WHERE [ID] = {id}");
+
         /// <summary>
         /// Updates the user information with the given user structure and returns whether the operation was successful
         /// </summary>

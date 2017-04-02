@@ -42,7 +42,11 @@ hr {
 }
 
 .blurred {
-    filter: blur(10px);
+    -webkit-filter: blur(10px);
+       -moz-filter: blur(10px);
+        -ms-filter: blur(10px);
+         -o-filter: blur(10px);
+            filter: blur(10px);
 }
 
 .code {
@@ -112,6 +116,10 @@ a, input, button, body, #main {
     padding: 40px;
     height: 10em;
     top: 50%;
+}
+
+#title {
+    cursor: pointer;
 }
 
 #header,

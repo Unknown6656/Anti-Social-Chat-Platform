@@ -19,6 +19,7 @@ using System.IO;
 using System;
 
 using NetFwTypeLib;
+using System.Net.NetworkInformation;
 
 namespace ASC.Server
 {
@@ -30,7 +31,10 @@ namespace ASC.Server
     {
         internal const string ARG_IGNMTX = "--ignore-mutex";
         internal const string ARG_DELFWL = "--delete-firewall-entries";
+        internal const string ARG_OFFLINE = "--offline-mode";
+        internal const string ARG_NOLOG = "--no-log-save";
 
+        internal static string recaptcha_private = null;
         private static bool accptconnections = false;
         private static Database database;
 
@@ -147,6 +151,11 @@ namespace ASC.Server
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
             WindowsPrincipal principal = new WindowsPrincipal(identity);
 
+            $"Application started with the following {args.Length} argument(s):".Msg();
+
+            for (int i = 0; i < args.Length; i++)
+                $"    [{i}]: {args[i].Trim()}".Msg();
+
             if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
             {
                 "This application is not running as administrator and will therefore have privilege and authorisation problems. Please restart it with elevated privilege.".Err();
@@ -174,10 +183,15 @@ namespace ASC.Server
 
             $"Running from '{dir}'".Info();
 
+            if (File.Exists(Win32.RECAPTCHA_SECRET) && ((recaptcha_private = File.ReadAllText(Win32.RECAPTCHA_SECRET)?.Trim() ?? recaptcha_private ?? "").Length > 0))
+                $"Loaded the ReCaptcha private key '{recaptcha_private}'".Ok();
+            else
+                "No ReCaptcha private key could be found, meaning that the register-function will not be available.".Err();
+
             using (Mutex m = new Mutex(false, Win32.MUTEX))
                 try
                 {
-                    if (m.WaitOne(0, false) || args.Contains(ARG_IGNMTX))
+                    if (m.WaitOne(0, false) || containsarg(ARG_IGNMTX))
                     {
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
                         InstallCertificate($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
@@ -195,10 +209,16 @@ namespace ASC.Server
 
                             FirewallUtils.OpenPort(port, "ASC Server");
 
-                            $"Port {port} was successfully registered".Ok();
+                            $"Port {port} was successfully registered.".Ok();
                         }
 
                         "Firewall rules set.".Ok();
+
+                        if (containsarg(ARG_OFFLINE))
+                            "Server running in offline mode. No internet connection checks will be performed.".Warn();
+                        else
+                            if (!TestConnection())
+                                "No connection to the outside internet could be made. Many of the server's features will only work partially.".Err();
 
                         fixed (bool* bptr = &accptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
@@ -218,7 +238,7 @@ namespace ASC.Server
                 }
                 finally
                 {
-                    if (args.Contains(ARG_DELFWL))
+                    if (containsarg(ARG_DELFWL))
                     {
                         "Removing previously set firewall rules ...".Msg();
 
@@ -234,6 +254,11 @@ namespace ASC.Server
 
                     m.Close();
 
+                    "Logging service shutting down.".Info();
+
+                    if (!containsarg(ARG_NOLOG))
+                        Logger.Save(Directory.GetCurrentDirectory());
+
                     if (Debugger.IsAttached | (Win32.GetConsoleWindow() != IntPtr.Zero))
                     {
                         "Press any key ...".Msg();
@@ -243,6 +268,8 @@ namespace ASC.Server
                 }
 
             return retcode;
+
+            bool containsarg(string arg) => args.Any(_ => _.ToLower().Trim() == arg.ToLower().Trim());
         }
 
         [OperationContract]
@@ -301,8 +328,9 @@ namespace ASC.Server
 
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
-                    {// testing
-                        foreach (string s in @"The original unit was raised June 8, 1776, ar Lee for service ".Replace('.', ',').Replace('\'', ',').Replace(",", "").Split())
+                    {
+                        // testing
+                        foreach (string s in @"foo bar baz test anon topkek".Split())
                         {
                             DBUser user = new DBUser {
                                 IsAdmin = s.Length % 4 == 3,
@@ -331,8 +359,36 @@ namespace ASC.Server
 
                     Authentification.Stop();
 
+                    lock (ASCServer.TemporaryUsers)
+                        foreach (long id in ASCServer.TemporaryUsers.Keys)
+                            database?.DeleteUser(id);
+
                     "Disconnicting from the database ...".Msg();
                 }
+        }
+
+        internal static bool TestConnection()
+        {
+            object mutex = new object();
+            bool res = false;
+
+            Parallel.ForEach(new string[] { "8.8.8.8", "8.8.4.4", "google.com", "wikipedia.org", "4chan.org", "yahoo.com", "microsoft.com", "apple.com" }, (dns, local) => {
+                try
+                {
+                    using (Ping p = new Ping())
+                        if (p.Send(dns, 3000).Status == IPStatus.Success)
+                            lock (mutex)
+                            {
+                                res |= true;
+                                local.Stop();
+                            }
+                }
+                catch
+                {
+                }
+            });
+
+            return res;
         }
     }
 
@@ -407,6 +463,7 @@ namespace ASC.Server
 
     internal static class Win32
     {
+        internal const string RECAPTCHA_SECRET = "./recaptcha.key";
         internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
         internal const string MUTEX = "ASC_server_" + GUID;
         internal const string NAMESPACE_URI = "http://0.0.0.0:8081";
@@ -446,16 +503,22 @@ namespace ASC.Server
     {
         private static readonly StringBuilder log = new StringBuilder();
         private static readonly Queue<Action> actions = new Queue<Action>();
+        private static readonly DateTime startup = DateTime.Now;
 
 
         internal static string Log => log.ToString();
 
-        static Logger() => ThreadPool.QueueUserWorkItem(delegate
+        static Logger()
         {
-            while (true)
-                if (actions.Count > 0)
-                    actions.Dequeue()();
-        });
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                while (true)
+                    if (actions.Count > 0)
+                        actions.Dequeue()();
+            });
+
+            $"Logger service started at {startup:yyyy-MM-dd HH:mm:ss.ffffff}".Info();
+        }
 
         private static void PrintColored(this string str, string prefix, ConsoleColor col) => actions.Enqueue(delegate
         {
@@ -475,7 +538,7 @@ namespace ASC.Server
             Console.WriteLine(str ?? "");
             Console.ForegroundColor = ConsoleColor.White;
 
-            log.AppendLine($"[{now:YYYY-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}");
+            log.AppendLine($"[{now:yyyy-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}");
         });
 
         internal static void Clear() => actions.Enqueue(() => log.Clear());
@@ -507,5 +570,13 @@ namespace ASC.Server
         internal static void Info(this string str) => PrintColored(str, "INFO", ConsoleColor.Magenta);
 
         internal static void Sql(this string str) => PrintColored(str, "tSQL", ConsoleColor.Cyan);
+
+        internal static void Save(this string dir)
+        {
+            while (actions.Count > 0)
+                ;
+
+            File.AppendAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
+        }
     }
 }

@@ -62,6 +62,7 @@
         top: 0px;
     }
 </style>
+<a name="login"/>
 <div class="warning">
     §login_explanation§
 </div>
@@ -75,6 +76,10 @@
         <input type="password" id="_password" placeholder="§login_password_placeholder§" autocomplete="on" /><br />
         <br />
         <input type="submit" value="§login_button§"/>
+        <br />
+        <br />
+        §login_register_suggest§
+        <a href="#register">§login_register_clickhere§</a>
     </form>
 </div>
 <br />
@@ -86,4 +91,26 @@
     <input type="text" placeholder="§search_username§" />
     <br/>
     <div id="_guids"></div>
+</div>
+<br />
+<hr />
+<a name="register" />
+<br />
+<div id="_register">
+    <form action="registered" method="get">
+        <script src='https://www.google.com/recaptcha/api.js'></script>
+        §login_register_username§:<br />
+        <input type="text" id="_regname" placeholder="§search_username§" autocomplete="on" /><br />
+        §login_password_description§:<br />
+        <input type="password" id="_regpw1" placeholder="§login_password_placeholder§" autocomplete="on" /><br />
+        §login_register_repeatpw§:<br />
+        <input type="password" id="_regpw2" placeholder="§login_password_placeholder§" autocomplete="on" /><br />
+        <div class="g-recaptcha" data-sitekey="6LccShsUAAAAAFGWeFph9--g9jj_YUZriA336wqw"></div>
+        <br />
+        <input type="submit" value="§login_register_button§" />
+        <br />
+        <br />
+        §login_suggest§
+        <a href="#login">§login_clickhere§</a>
+    </form>
 </div>
