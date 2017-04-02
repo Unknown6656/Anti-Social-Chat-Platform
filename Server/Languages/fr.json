@@ -32,7 +32,9 @@
     },
     "invalid": "L'identifiant GUID et/ou le mot de passe donnés sont invalides.",
     "blocked": "L'utilisateur associé à la GUID donnée est bloqué et doit être débloqué par un administrateur.",
-    "explanation": "Vous n'êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte."
+    "explanation": "Vous n'êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte.",
+    "logout": "Déconnecter",
+    "loggedinas": "Connecté en tant que"
   },
   "search": {
     "username": "Nom d'utilisateur",

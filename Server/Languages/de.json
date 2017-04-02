@@ -32,12 +32,14 @@
     },
     "invalid": "Die Kombination aus GUID und Passwort ist ungültig.",
     "blocked": "Der Benutzer mit der gegebenen GUID ist gesperrt und muss von einem Administrator freigeschaltet werden.",
-    "explanation": "You are not logged in. Please use the form below to log into your account." // TODO
+    "explanation": "Sie sind nicht eingeloggt. Bitte verwenden Sie das folgende Formular, um sich einzuloggen.",
+    "logout": "Ausloggen",
+    "loggedinas": "Eingeloggt als"
   },
   "search": {
     "username": "Benutzername",
-    "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:", // TODO
-    "membersince": "Member since", // TODO
+    "forgot": "GUID vergessen?<br/>Hier können Sie nach Ihrer GUID auf Basis des sichtbaren Namens suchen:",
+    "membersince": "Mitglied seit",
     "admin": "Administrator",
     "locked": "Gesperrt"
   },

@@ -74,7 +74,7 @@ $(document).ready(function () {
 </div>`);
         });
     });
-    $('#header #flag').click(function () {
+    $('#flag').click(function () {
         $('#lang_change_bg, #lang_change_form').css('display', 'block');
         $('#lang_change_form > div.lang_container').height(270 - $('#lang_change_form > span').height());
         inner.addClass('blurred');
@@ -100,6 +100,22 @@ $(document).ready(function () {
 
         window.location.reload();
     });
+
+    try {
+        var user = §user§;
+
+        if ((user != undefined) && (user != null)) {
+            $('#footer').css('display', 'block');
+            $('#_logout').click(function () {
+                $.cookie["_sess"] = "";
+
+                window.location.href = base_uri;
+            });
+            $('#_userinfo').html(`<b>${user.Name} <code>{${user.UUID}}</code></b>`);
+        }
+    } catch (e) { }
+
+    // TODO : session refresher and auto-logout, if session is invalid
 });
 
 function ajax(operation, params) {

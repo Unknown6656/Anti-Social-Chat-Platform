@@ -32,14 +32,16 @@
     },
     "invalid": "The given GUID and/or password are invalid.",
     "blocked": "The user associated with the given GUID is blocked and must be unblocked by an administrator.",
-    "explanation": "You are not logged in. Please use the form below to log into your account."
+    "explanation": "You are not logged in. Please use the form below to log into your account.",
+    "logout": "Log out",
+    "loggedinas": "Logged in as"
   },
   "search": {
     "username": "Username",
     "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:",
     "membersince": "Member since",
     "admin": "Administrator",
-    "blocked": "Blocked"
+    "locked": "Blocked"
   },
   "global": {
     "title": "Anti-Social Chat Platform",

@@ -122,6 +122,8 @@
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />
     <Content Include="Resources\sha512.js" />
+    <Content Include="Resources\style.desktop.css" />
+    <Content Include="Resources\style.mobile.css" />
     <Content Include="SQLScripts\dbo.Functions.Trim.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

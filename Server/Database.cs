@@ -10,6 +10,8 @@ using System.Text;
 using System.IO;
 using System;
 
+using Newtonsoft.Json;
+
 using static ASC.Server.Database.DatabaseHelper;
 
 namespace ASC.Server
@@ -244,7 +246,7 @@ namespace ASC.Server
         internal bool CanChangeName(string newname) => !Execute($"SELECT 0 FROM {USERS} WHERE UPPER([Name]) = '{newname?.ToUpper() ?? ""}'").Any();
 
         internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
-                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""]+$", out _) &&
+                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""`´]+$", out _) &&
                                                    !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
 
         internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
@@ -528,6 +530,44 @@ namespace ASC.Server
                 using (SqlDataReader rd = cmd.ExecuteReader())
                     foreach (object obj in rd)
                         yield return obj;
+            }
+
+            internal static string ExecuteToJSON(string sql)
+            {
+                using (SqlCommand cmd = new SqlCommand(sql, Connection))
+                using (SqlDataReader rd = cmd.ExecuteReader())
+                    return toJSON(rd).GetAwaiter().GetResult();
+            }
+
+            public async static Task<string> toJSON(SqlDataReader reader)
+            {
+                IEnumerable<Dictionary<string, object>> results = await GetSerialized(reader);
+
+                return JsonConvert.SerializeObject(results, Formatting.Indented);
+            }
+
+            public async static Task<IEnumerable<Dictionary<string, object>>> GetSerialized(SqlDataReader reader)
+            {
+                List<Dictionary<string, object>> results = new List<Dictionary<string, object>>();
+                List<string> cols = new List<string>();
+
+                for (var i = 0; i < reader.FieldCount; i++)
+                    cols.Add(reader.GetName(i));
+
+                while (await reader.ReadAsync())
+                    results.Add(SerializeRow(cols, reader));
+
+                return results;
+            }
+
+            private static Dictionary<string, object> SerializeRow(IEnumerable<string> cols, SqlDataReader reader)
+            {
+                Dictionary<string, object> result = new Dictionary<string, object>();
+
+                foreach (string col in cols)
+                    result[col] = reader[col];
+
+                return result;
             }
 
             internal static string SQLEncode(string text) => Uri.EscapeDataString(text ?? "");

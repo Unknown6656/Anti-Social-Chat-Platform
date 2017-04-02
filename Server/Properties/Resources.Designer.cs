@@ -76,9 +76,11 @@ namespace ASC.Server.Properties {
         ///&lt;div id=&quot;_chat&quot;&gt;
         ///    User logged in with:
         ///    &lt;br/&gt;
-        ///&lt;pre&gt;
-        ///§user§
-        ///&lt;/pre&gt;
+        ///    &lt;pre&gt;§user§&lt;/pre&gt;
+        ///    &lt;br/&gt;
+        ///    and session:
+        ///    &lt;br /&gt;
+        ///    &lt;pre&gt;§user_auth§&lt;/pre&gt;
         ///&lt;/div&gt;.
         /// </summary>
         internal static string chat {
@@ -258,13 +260,19 @@ namespace ASC.Server.Properties {
         ///        color: #bbb;
         ///        padding: 3px;
         ///    }
-        ///&lt;/style&gt;
-        ///&lt;div id=&quot;_login&quot;&gt;
-        ///    &lt;form action=&quot;&quot; method=&quot;get&quot;&gt;
-        ///        §login_guid_description§:&lt;br /&gt;
-        ///        &lt;i&gt;(§login_guid_annotation§)&lt;/i&gt;&lt;br /&gt;
-        ///        &lt;input type=&quot;text&quot; id=&quot;_guid&quot; placeholder=&quot;§login_guid_placeholder§&quot; autocomplete=&quot;on&quot; /&gt;&lt;br /&gt;
-        ///        [rest of string was truncated]&quot;;.
+        ///
+        ///    #_guids {
+        ///        background-color: #333;
+        ///        border: 1px solid #666;
+        ///        overflow-x: hidden;
+        ///        overflow-y: scroll;
+        ///        padding: 6px;
+        ///        height: 500px;
+        ///        width: calc(100% - 12px);
+        ///    }
+        ///
+        ///    #_guids &gt; div {
+        ///        bord [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string login {
             get {
@@ -276,19 +284,19 @@ namespace ASC.Server.Properties {
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
         ///$(document).ready(function () {
+        ///    var inner = $(&apos;#header, #content, #footer&apos;);
+        ///
+        ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
+        ///    inner.removeClass(&apos;blurred&apos;);
+        ///
         ///    session = $.cookie(&quot;_sess&quot;);
         ///
         ///    $.cookie(&quot;_lang&quot;, &apos;§lang_code§&apos;);
         ///    $(&apos;#content&apos;).css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
+        ///    $(&apos;#content&apos;).css(&apos;margin-bottom&apos;, ($(&apos;#footer&apos;).height() + 20) + &apos;px&apos;);
         ///
-        ///    if (§ssl§) // server-generated
-        ///        $(&apos;#ssl_warning&apos;).css(&apos;display&apos;, &apos;none&apos;);
-        ///    else
-        ///        $(&apos;#ssl_warning a&apos;).attr(&apos;href&apos;, https_uri + &apos;§url§&apos;);
-        ///
-        ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
-        ///    $(&apos;.blurred&apos;).removeClass(&apos;blurred&apos;);
-        ///    $(window).resize(funct [rest of string was truncated]&quot;;.
+        ///    //if (!$.browser.webkit) {
+        ///    //    $(&apos;#main&apos;).html(`&lt;div c [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -304,7 +312,7 @@ namespace ASC.Server.Properties {
         ///var https_uri = &apos;https://§host§:§port_https§&apos;;
         ///var api_uri = &apos;§protocol§://§host§:§port§/api.json?lang=§lang_code§&apos;;
         ///var session = &apos;&apos;;
-        ///.
+        ///var avail_lang = [§lang_avail§];.
         /// </summary>
         internal static string pre_script {
             get {
@@ -342,33 +350,45 @@ namespace ASC.Server.Properties {
         ///@import url(&apos;https://fonts.googleapis.com/css?family=UnifrakturCook:700&apos;);
         ///
         ///
-        ///* {
-        ///    font-family: &apos;Segoe UI&apos;, Tahoma, Geneva, Verdana, sans-serif;
-        ///    font-size: 12pt;
+        ///::-webkit-scrollbar-track {
+        ///    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+        ///    background-color: rgba(245, 245, 245, 0.21);
         ///}
         ///
-        ///a {
-        ///    font-size: inherit;
-        ///    color: inherit;
+        ///::-webkit-scrollbar {
+        ///    /* background-color: #F5F5F5; */
+        ///    border-radius: 10px;
+        ///    width: 10px;
         ///}
         ///
-        ///.blurred {
-        ///    filter: blur(10px);
-        ///}
-        ///
-        ///.code {
-        ///    font-family: &apos;Ubuntu Mono&apos;, &apos;Courier New&apos;, &apos;Lucida Console&apos;, Courier, Consolas, monospace;
-        ///    white-space: pre;
-        ///    text-align: left;
-        ///}
-        ///
-        ///input,
-        ///button {
-        ///    [rest of string was truncated]&quot;;.
+        ///::-webkit-scrollbar-thumb {
+        ///    background-color: #F90;
+        ///    background-image: -webkit-linear-gradient(45deg,
+        ///             [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {
                 return ResourceManager.GetString("style", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to /* DESKTOP ONLY */
+        ///.
+        /// </summary>
+        internal static string style_desktop {
+            get {
+                return ResourceManager.GetString("style_desktop", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to /* MOBILE ONLY */
+        ///.
+        /// </summary>
+        internal static string style_mobile {
+            get {
+                return ResourceManager.GetString("style_mobile", resourceCulture);
             }
         }
         
