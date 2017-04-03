@@ -334,8 +334,7 @@ namespace ASC.Server
                         {
                             DBUser user = new DBUser {
                                 IsAdmin = s.Length % 4 == 3,
-                                Name = s,
-                                Status = s
+                                Name = s
                             };
 
                             database.AddUser(ref user);
@@ -514,7 +513,7 @@ namespace ASC.Server
             {
                 while (true)
                     if (actions.Count > 0)
-                        actions.Dequeue()();
+                        actions.Dequeue()?.Invoke();
             });
 
             $"Logger service started at {startup:yyyy-MM-dd HH:mm:ss.ffffff}".Info();
@@ -576,7 +575,7 @@ namespace ASC.Server
             while (actions.Count > 0)
                 ;
 
-            File.AppendAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
+            File.WriteAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
         }
     }
 }

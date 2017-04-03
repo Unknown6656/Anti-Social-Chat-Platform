@@ -251,7 +251,7 @@ namespace ASC.Server
                                                    ASCServer.regex(user?.Status ?? "", @"^[^\'\""`´]+$", out _) &&
                                                    !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
 
-        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]+$", out _);
+        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]{1,49}$", out _);
 
         #endregion
         #region AUTHENTIFICATION MANAGEMENT
@@ -267,7 +267,7 @@ namespace ASC.Server
             if (!ValidateHash(hash))
                 return false;
 
-            ExecuteVoid($"UPDATE {UAUTH} SET [Hash] = '{hash.ToUpper()}' WHERE [ID] = {id} AND [IsBlocked] = 0");
+            ExecuteVoid(GetScript(nameof(UpdateUserHash), hash.ToUpper(), id));
 
             return true;
         }
@@ -345,7 +345,7 @@ namespace ASC.Server
             return auth;
         }
 
-        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _);
+        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _) || (hash?.ToLower() ?? "null") == "null";
 
         #endregion
         #region GENERAL
@@ -660,6 +660,8 @@ namespace ASC.Server
             rng = new RNGCryptoServiceProvider();
 
             "Started the cryprographic RNG serive provider".Ok();
+
+            ASCServer.NonExistantPath = GenerateSaltString();
         }
 
         /// <summary>

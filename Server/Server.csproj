@@ -130,6 +130,9 @@
     <Content Include="SQLScripts\GetUserBySession.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="SQLScripts\UpdateUserHash.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="SQLScripts\VerifyUser.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

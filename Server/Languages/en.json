@@ -16,7 +16,20 @@
     "500": "Service currently not available",
     "400": "Invalid operation",
     "403": "Permission denied",
-    "404": "Resource not found"
+    "404": "Resource not found",
+    "redirect": {
+      "pre": "You will be redirected to the main site in",
+      "post": "seconds...",
+      "stop": "Stop redirection"
+    },
+    "api": {
+      "missingop": "An operation must be specified.",
+      "unknownop": "The operation '{0}' is unknown.",
+      "needsuser": "An user account is required to perform this operation",
+      "needsadmin": "An administrator account is required to perform this operation",
+      "malformatted": "At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{0}:\n{1}</pre>",
+      "valuerequired": "A value for '{0}' is required when using the operation '{1}'."
+    }
   },
   "unsafe": "Your connection is not safe. Consider connecting to this website via SSL.",
   "login": {
@@ -42,7 +55,12 @@
       "suggest": "You do not have an account?",
       "clickhere": "Click here to register one.",
       "username": "Your username",
-      "repeatpw": "Repeat your password"
+      "repeatpw": "Repeat your password",
+      "missingcaptcha": "You forgot to solve the Captcha during the registration",
+      "missingparams": "The username and password are needed for a registration",
+      "pwnonequal": "Both given passwords must be equal",
+      "invalname": "The given name is either not valid or already in use",
+      "fillcaptcha": "The Captcha must be solved"
     }
   },
   "search": {

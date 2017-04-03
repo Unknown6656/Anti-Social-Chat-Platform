@@ -19,7 +19,7 @@ $(document).ready(function () {
     if (§ssl§/* server-generated */)
         $('#ssl_warning').css('display', 'none');
     else
-        $('#ssl_warning a').attr('href', https_uri + '§url§');
+        $('#ssl_warning a').attr('href', https_uri + `§url§`);
 
     $(window).resize(function () {
         $('#ssl_warning').css('top', $('#header').height() + 20);
@@ -65,13 +65,13 @@ $(document).ready(function () {
 
                 $.cookie("_sess", session, { expires: 3600 });
 
-                window.location.assign('§protocol§://§host§:§port§§url§');
+                window.location.assign(`§protocol§://§host§:§port§§url§`);
             }
             else
                 throw null;
         }
         catch (ex) {
-            alert("§login_invalid§");
+            printerror(`§login_invalid§`);
         }
     });
     $('#_login form').submit(function (event) { event.preventDefault(); });
@@ -126,17 +126,95 @@ $(document).ready(function () {
 
         if ((user != undefined) && (user != null)) {
             $('#footer').css('display', 'block');
-            $('#_logout').click(function () {
-                $.cookie("_sess", "");
-
-                window.location.href = base_uri;
-            });
+            $('#_logout').click(gotomainsite);
             $('#_userinfo').html(`<b>${user.Name} <code>{${user.UUID}}</code></b>`);
         }
     } catch (e) { }
 
+    if ($('#_ecountdown').length > 0) {
+        var stop = $('#_error input[type=button]');
+        var sec = 10;
+        var id = setInterval(function () {
+            --sec;
+
+            $('#_ecountdown').html(sec);
+
+            if (sec == 0)
+                gotomainsite();
+        }, 1000);
+
+        stop.click(function () {
+            clearInterval(id);
+
+            stop.css('display', 'none');
+            stop.parent().css('display', 'none');
+        });
+    }
+
+    $('#_register form').submit(function (event) {
+        event.preventDefault();
+
+        var name = $('#_regname').val();
+        var pass = $('#_regpw1').val();
+
+        if (!ajax('can_use_name', `name=${name}`).Data)
+            printerror(`§login_register_invalname§`);
+        else if (pass != $('#_regpw2').val())
+            printerror(`§login_register_pwnonequal§`);
+        else if ($('.g-recaptcha textarea').val() == "")
+            printerror(`§login_register_fillcaptcha§`);
+        else {
+            var formdata = $(this).serialize();
+            var response = (function () {
+                var result;
+
+                $.ajax({
+                    url: `${api_uri}&operation=auth_register&name=${name}`,
+                    type: 'get',
+                    async: false,
+                    cache: false,
+                    data: formdata,
+                    dataType: 'json',
+                    success: function (dat) {
+                        result = dat;
+                    }
+                });
+
+                return result;
+            })();
+
+            if (response.Success)
+                try {
+                    deletecookie('_sess');
+
+                    response = response.Data;
+                    var hash = gethash(pass, response.Salt);
+
+                    if (ajax("auth_change_pw", `id=${response.ID}&hash=${response.Hash}&newhash=${hash}`)) {
+
+
+                        // TODO
+                    }
+                    else
+                        throw null;
+                } catch (e) {
+                    ajax("delete_tmp", `id=${response.ID}&hash=${response.Hash}`);   
+                }
+        }
+
+        return false;
+    });
+
     // TODO : session refresher and auto-logout, if session is invalid
 });
+
+function deletecookie(name) {
+    $.cookie(name, null, { path: '/' });
+}
+
+function printerror(msg) {
+    alert(msg); // TODO : better error notification
+}
 
 function ajax(operation, params) {
     var uri = `${api_uri}&session=${session}&operation=${operation}&${params}`;
@@ -170,4 +248,10 @@ function getlanguages() {
     });
 
     return langs;
+}
+
+function gotomainsite() {
+    $.cookie("_sess", "");
+
+    window.location.href = base_uri;
 }

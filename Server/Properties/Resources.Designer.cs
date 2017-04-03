@@ -310,9 +310,11 @@ namespace ASC.Server.Properties {
         ///var sha512;
         ///var http_uri = &apos;http://§host§:§port_http§&apos;;
         ///var https_uri = &apos;https://§host§:§port_https§&apos;;
-        ///var api_uri = &apos;§protocol§://§host§:§port§/api.json?lang=§lang_code§&apos;;
+        ///var base_uri = &apos;§protocol§://§host§:§port§/&apos;;
+        ///var api_uri = base_uri + &apos;api.json?lang=§lang_code§&apos;;
         ///var session = &apos;&apos;;
-        ///var avail_lang = [§lang_avail§];.
+        ///var avail_lang = [§lang_avail§];
+        ///.
         /// </summary>
         internal static string pre_script {
             get {

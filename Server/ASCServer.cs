@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Drawing.Imaging;
@@ -16,7 +17,8 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
 using Resources = ASC.Server.Properties.Resources;
-using System.Collections.Specialized;
+
+using static ASC.Server.StatusCode;
 
 namespace ASC.Server
 {
@@ -29,6 +31,7 @@ namespace ASC.Server
         internal static readonly Regex REGEX_MOBILEVERSION = new Regex(@"1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
         internal static readonly Regex REGEX_MOBILE = new Regex(@"android|(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
+        internal static string NonExistantPath { get; set; } // only used for client-side cookies
         internal static Dictionary<long, DBUser> TemporaryUsers { get; } = new Dictionary<long, DBUser>();
         internal static Dictionary<string, Dictionary<string, string>> LanguagePacks { get; }
         internal static Dictionary<string, ASCOperation> Operations { get; }
@@ -59,6 +62,7 @@ namespace ASC.Server
 
             Operations = new Dictionary<string, ASCOperation>
             {
+                ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
                 ["lang_pack"] = new ASCOperation((req, res, vals, db) => LanguagePacks[vals["code"].ToLower()], keys: "lang"),
                 ["lang_info"] = new ASCOperation((req, res, vals, db) =>
                 {
@@ -74,21 +78,42 @@ namespace ASC.Server
                 ["user_by_name"] = new ASCOperation((req, res, vals, db) => db.FindUsers(vals["name"]), keys: "name"),
                 ["user_by_id"] = new ASCOperation((req, res, vals, db) => db.GetUser(long.Parse(vals["id"])), keys: "id"),
                 ["user_by_guid"] = new ASCOperation((req, res, vals, db) => db.GetUser(Guid.Parse(vals["guid"])), keys: "guid"),
+                ["can_use_name"] = new ASCOperation((req, res, vals, db) => db.ValidateUserName(vals["name"]) && db.CanChangeName(vals["name"]), keys: "name"),
                 ["auth_register"] = new ASCOperation((req, res, vals, db) => {
-                    DBUser user = new DBUser { Name = vals["name"] };
-                    DBUserAuthentification auth = db.AddUser(ref user);
+                    ReCaptchaResult result = null;
 
-                    lock (TemporaryUsers)
-                        TemporaryUsers[user.ID] = user;
+                    using (WebClient wc = new WebClient())
+                        result = JsonConvert.DeserializeObject<ReCaptchaResult>(Encoding.UTF8.GetString(wc.UploadValues("https://www.google.com/recaptcha/api/siteverify", new NameValueCollection
+                        {
+                            ["secret"] = Program.recaptcha_private ?? "",
+                            ["response"] = vals["g-recaptcha-response"],
+                            // ["remoteip"] = vars["user_addr"],
+                        })));
 
-                    return new
+                    if ((result?.success ?? false) /* && (result.hostname.ToLower() != req.UserHostName.ToLower()) */)
                     {
-                        ID = user.ID,
-                        UUID = user.UUID,
-                        Salt = auth.Salt,
-                        Hash = auth.Hash,
-                    };
-                }, ASCOperationPrivilege.Regular, "name"),
+                        DBUser user = new DBUser
+                        {
+                            IsBlocked = false,
+                            Name = vals["name"],
+                        };
+                        DBUserAuthentification auth = db.AddUser(ref user);
+
+                        lock (TemporaryUsers)
+                            TemporaryUsers[user.ID] = user;
+
+                        return new
+                        {
+                            ID = user.ID,
+                            UUID = user.UUID,
+                            Salt = auth.Salt,
+                            Hash = auth.Hash,
+                        };
+                    }
+
+                    throw null;
+                }, ASCOperationPrivilege.Regular, "name", "g-recaptcha-response"),
+                ["auth_change_pw"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["newhash"]), ASCOperationPrivilege.User, "newhash"),
                 ["auth_login"] = new ASCOperation((req, res, vals, db) => new
                 {
                     Success = verify(req, db, vals["id"], vals["hash"], out string session),
@@ -96,9 +121,31 @@ namespace ASC.Server
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
                 ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), keys: "id"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), keys: "new"),
-                ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
-                ["auth_test"] = new ASCOperation(null, ASCOperationPrivilege.User), // TESTING ONLY
+                ["delete_tmp"] = new ASCOperation((req, res, vals, db) => {
+                    long id = long.Parse(vals["id"]);
+                    bool result = false;
+
+                    if (TemporaryUsers.ContainsKey(id))
+                        if (db.VerifyUser(id, vals["hash"]))
+                        {
+                            db.DeleteUser(id);
+
+                            result = true;
+                        }
+
+                    return result;
+                }, ASCOperationPrivilege.Regular, "id", "hash"),
+
+                #region ADMINISTRATIVE TOOLS
+
                 ["raw_sql"] = new ASCOperation((req, res, vals, db) => JsonConvert.DeserializeObject(Database.DatabaseHelper.ExecuteToJSON(vals["cmd"])), ASCOperationPrivilege.Administrator, "cmd"),
+                ["save_log"] = new ASCOperation((req, res, vals, db) => {
+                    Logger.Save(Directory.GetCurrentDirectory());
+
+                    return new { };
+                }, ASCOperationPrivilege.Administrator),
+
+                #endregion
             };
         }
 
@@ -224,7 +271,9 @@ namespace ASC.Server
         {
             #region INIT
 
-            Dictionary<string, object> vars = new Dictionary<string, object>();
+            Dictionary<string, object> vars = new Dictionary<string, object> {
+                ["nexpath"] = NonExistantPath
+            };
             int port = request.LocalEndPoint.Port;
             string url = request.RawUrl;
             DateTime now = DateTime.Now;
@@ -237,7 +286,7 @@ namespace ASC.Server
 
             while (!*acceptconnections)
                 if (sw.ElapsedMilliseconds > 30000)
-                    return SendError(request, response, vars, StatusCode._500, "");
+                    return SendError(request, response, vars, _500, "");
 
             #endregion
             #region RESOURCE REQUEST
@@ -251,7 +300,7 @@ namespace ASC.Server
 
                 try
                 {
-                    SetStatusCode(response, StatusCode._200);
+                    SetStatusCode(response, _200);
 
                     response.ContentType = m.Groups["type"].ToString();
 
@@ -303,7 +352,7 @@ namespace ASC.Server
 
                 $"Resource '{resource}' not found.".Warn();
 
-                return SendError(request, response, vars, StatusCode._404, $"The resource '{resource}' could not be found.");
+                return SendError(request, response, vars, _404, $"The resource '{resource}' could not be found.");
             }
 
             #endregion
@@ -375,7 +424,7 @@ namespace ASC.Server
                         IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
 
                         if (missing.Any())
-                            return error($"A value for '{missing.First()}' is required when using the operation '{op}'.");
+                            return error("error_api_valuerequired", _400, missing.First(), op);
 
                         try
                         {
@@ -392,7 +441,7 @@ namespace ASC.Server
                                         & (ascop.Privilege == ASCOperationPrivilege.Administrator ? user.IsAdmin : true);
 
                                 if (!res)
-                                    return error($"An {ascop.Privilege.ToString().ToLower()} account is required to perform this operation", StatusCode._403);
+                                    return error(ascop.Privilege == ASCOperationPrivilege.Administrator ? "error_api_needsadmin" : "error_api_needsuser", _403);
                             }
 
                             vars["user_session"] = session;
@@ -406,13 +455,13 @@ namespace ASC.Server
                         }
                         catch (Exception ex)
                         {
-                            return error($"At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{ex.Message}:\n{ex.StackTrace}</pre>");
+                            return error("error_api_malformatted", _400, ex.Message, ex.StackTrace);
                         }
                     }
                     else
-                        return error($"The operation '{op}' is unknown.");
+                        return error("error_api_unknownop", args: op);
                 else
-                    return error("An operation must be specified.");
+                    return error("error_api_missingop");
             }
 
             #endregion
@@ -459,33 +508,10 @@ namespace ASC.Server
             vars["style"] = FetchResource(Resources.style, vars);
 
             #endregion
-            #region USER REGISTRATION HANDLING
-
-            if (regex(url, @"\bregistered(\b|$)", out m))
-            {
-                string result = null;
-
-                if (contains(request, "g-recaptcha-response", out string recaptcha))
-                    using (WebClient wc = new WebClient())
-                    {
-                        byte[] res = wc.UploadValues("https://www.google.com/recaptcha/api/siteverify", new NameValueCollection
-                        {
-                            ["secret"] = Program.recaptcha_private ?? "",
-                            ["response"] = recaptcha,
-                            // ["remoteip"] = vars["user_addr"],
-                        });
-
-                        result = Encoding.UTF8.GetString(res);
-                    }
-
-                // TODO
-            }
-
-            #endregion
 
             return FetchResource(Resources.frame, vars);
 
-            HTTPResponse error(string msg, StatusCode code = StatusCode._400)
+            HTTPResponse error(string msg, StatusCode code = _400, params object[] args)
             {
                 SetStatusCode(response, code);
 
@@ -493,7 +519,7 @@ namespace ASC.Server
                 {
                     Success = false,
                     Session = session,
-                    Data = msg
+                    Data = (args ?? new object[0]).Length > 0 ? string.Format(vars[msg].ToString(), args) : vars[msg]
                 });
             }
             DBUser getsessionuser()
@@ -547,7 +573,12 @@ namespace ASC.Server
         {
             session = null;
 
-            return long.TryParse(id, out long l) && db.Login(l, hash, req.RemoteEndPoint.ToString(), req.UserAgent, out session);
+            bool res = long.TryParse(id, out long l) && db.Login(l, hash, req.RemoteEndPoint.ToString(), req.UserAgent, out session);
+
+            if (res && TemporaryUsers.ContainsKey(l))
+                TemporaryUsers.Remove(l);
+
+            return res;
         }
 
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
@@ -605,6 +636,13 @@ namespace ASC.Server
         /// Administrative privilege required
         /// </summary>
         Administrator = 2
+    }
+
+    internal class ReCaptchaResult
+    {
+        public bool success { set; get; }
+        public string challenge_ts { set; get; }
+        public string hostname { set; get; }
     }
 
     internal enum StatusCode
