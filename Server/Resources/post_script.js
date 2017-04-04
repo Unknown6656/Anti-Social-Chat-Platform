@@ -205,7 +205,9 @@ $(document).ready(function () {
         return false;
     });
 
+    upatesession();
     // TODO : session refresher and auto-logout, if session is invalid
+    // TODO : server down detection
 });
 
 function deletecookie(name) {
@@ -217,8 +219,12 @@ function printerror(msg) {
 }
 
 function ajax(operation, params) {
+    clearInterval(ival_sess);
+
     var uri = `${api_uri}&session=${session}&operation=${operation}&${params}`;
     var result;
+
+    console.log(session);
 
     $.ajax({
         url: uri,
@@ -229,6 +235,16 @@ function ajax(operation, params) {
             result = dat;
         }
     });
+
+    try {
+        if ((result.Session != null) && (result.Session != undefined))
+            $.cookie('_sess', session = result.Session);
+    } catch (e) {
+    }
+
+    console.log(session);
+
+    upatesession();
 
     return result;
 }
@@ -251,7 +267,15 @@ function getlanguages() {
 }
 
 function gotomainsite() {
-    $.cookie("_sess", "");
+    $.cookie("_sess", session = "");
 
     window.location.href = base_uri;
+}
+
+function upatesession() {
+    clearInterval(ival_sess);
+
+    ival_sess = setInterval(function () {
+        ajax('auth_refr_session', null);
+    }, 12000);
 }

@@ -152,7 +152,7 @@ namespace ASC.Server
 
             $"Added user {{{user.UUID}}}".Ok();
 
-            return auth;
+            return DecodeUAuth(auth);
         }
 
         public void DeleteUser(long id) => ExecuteVoid($"DELETE FROM {USERS} WHERE [ID] = {id}");
@@ -301,20 +301,25 @@ namespace ASC.Server
         /// <returns></returns>
         public bool Login(long id, string hash, string ip, string useragent, out string session)
         {
-            session = null;
-
             if (VerifyUser(id, hash))
             {
-                session = Authentification.GenerateSaltString();
-
-                ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id));
-
-                $"User 0x{id:x16} successfully logged in.".Msg();
+                AutoLogin(id, ip, useragent, out session);
 
                 return true;
             }
 
+            session = null;
+
             return false;
+        }
+
+        public void AutoLogin(long id, string ip, string useragent, out string session)
+        {
+            session = Authentification.GenerateSaltString();
+
+            ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id));
+
+            $"User 0x{id:x16} successfully logged in.".Msg();
         }
 
         /// <summary>
@@ -346,6 +351,25 @@ namespace ASC.Server
         }
 
         internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _) || (hash?.ToLower() ?? "null") == "null";
+
+        #endregion
+        #region MESSAGE MANAGEMENT
+
+        internal DBMessage DecodeMSG(DBMessage msg)
+        {
+            msg.Content = SQLDecode(msg.Content);
+            msg.SenderLocation = SQLDecode(msg.SenderLocation);
+
+            return msg;
+        }
+
+        internal DBMessage EncodeMSG(DBMessage msg)
+        {
+            msg.Content = SQLEncode(msg.Content);
+            msg.SenderLocation = SQLEncode(msg.SenderLocation);
+
+            return msg;
+        }
 
         #endregion
         #region GENERAL
@@ -438,6 +462,20 @@ namespace ASC.Server
             internal const string Name = "database.mdf";
 
             private static SqlConnection conn;
+
+
+            internal static string SQLVersion
+            {
+                get
+                {
+                    using (SqlConnection sql = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB; Connect Timeout=10;"))
+                    {
+                        sql.Open();
+
+                        return sql.ServerVersion;
+                    }
+                }
+            }
 
             internal static SqlConnection Connection
             {
@@ -805,6 +843,10 @@ namespace ASC.Server
         /// The message's sender IP
         /// </summary>
         public string SenderIP { get; set; }
+        /// <summary>
+        /// The message's sender location
+        /// </summary>
+        public string SenderLocation { get; set; }
         /// <summary>
         /// The message's content
         /// </summary>

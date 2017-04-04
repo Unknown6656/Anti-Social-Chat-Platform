@@ -2,6 +2,7 @@
 
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
+using System.Net.NetworkInformation;
 using System.ServiceModel.Security;
 using System.Collections.Generic;
 using System.Security.Principal;
@@ -19,7 +20,6 @@ using System.IO;
 using System;
 
 using NetFwTypeLib;
-using System.Net.NetworkInformation;
 
 namespace ASC.Server
 {
@@ -30,13 +30,81 @@ namespace ASC.Server
     public unsafe class Program
     {
         internal const string ARG_IGNMTX = "--ignore-mutex";
+        internal const string ARG_SLOWSTART = "--no-fast-start";
         internal const string ARG_DELFWL = "--delete-firewall-entries";
         internal const string ARG_OFFLINE = "--offline-mode";
         internal const string ARG_NOLOG = "--no-log-save";
 
+        internal static readonly string[] PingStations = @"8.8.8.8,
+                                                           8.8.4.4,
+                                                           google.com,
+                                                           wikipedia.org,
+                                                           4chan.org,
+                                                           yahoo.com,
+                                                           microsoft.com,
+                                                           apple.com,
+                                                           [2001:4860:4860::8888],
+                                                           [2001:4860:4860::8844]".Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(_ => _.Trim()).ToArray();
+
         internal static string recaptcha_private = null;
         private static bool accptconnections = false;
         private static Database database;
+
+
+        internal static Action<string[]>[] Tasks { get; } = new Action<string[]>[] {
+            args => {
+                if (File.Exists(Win32.RECAPTCHA_SECRET) && ((recaptcha_private = File.ReadAllText(Win32.RECAPTCHA_SECRET)?.Trim() ?? recaptcha_private ?? "").Length > 0))
+                    $"Loaded the ReCaptcha private key '{recaptcha_private}'".Ok();
+                else
+                    "No ReCaptcha private key could be found, meaning that the register-function will not be available.".Err();
+            },
+            args => {
+                "Setting firewall rules ...".Msg();
+
+                foreach (int port in new int[] { Win32.PORT, Win32.PORT + 1})
+                {
+                    if (FirewallUtils.IsPortOpen(port))
+                    {
+                        $"A serive is already running on port {port}. It will be shut down ...".Warn();
+
+                        FirewallUtils.ClosePort(port);
+                    }
+
+                    FirewallUtils.OpenPort(port, "ASC Server");
+
+                    $"Port {port} was successfully registered.".Ok();
+                }
+
+                "Firewall rules set.".Ok();
+            },
+            args => InstallCertificate($"{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root),
+            args => InstallCertificate($"{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher),
+            args => {
+                if (containsarg(args, ARG_OFFLINE))
+                    "Server running in offline mode. No internet connection checks will be performed.".Warn();
+                else
+                    if (!TestConnection())
+                        "No connection to the outside internet could be made. Many of the server's features will only work partially.".Err();
+                    else
+                        "A (stable) internet connection could be found. Good.".Ok();
+            },
+            args => {
+                try
+                {
+                    $"SQL Server v{Database.DatabaseHelper.SQLVersion} found.".Ok();
+                }
+                catch
+                {
+                    "No accessible SQL Server could be found on this machine. Please install one by following this link: https://www.microsoft.com/en-us/sql-server/sql-server-editions-express".Err();
+
+                    throw null;
+                }
+            },
+            args => {
+            },
+        };
+
+        private static bool containsarg(IEnumerable<string> args, string a) => args.Any(_ => _.ToLower().Trim() == a.ToLower().Trim());
 
         /// <summary>
         /// Installs the given certificate to the given .X509-store
@@ -148,6 +216,9 @@ namespace ASC.Server
         /// <returns>Return code</returns>
         public static int Main(string[] args)
         {
+#if DEBUG
+            AppDomain.MonitoringIsEnabled = true;
+#endif
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
             WindowsPrincipal principal = new WindowsPrincipal(identity);
 
@@ -155,6 +226,20 @@ namespace ASC.Server
 
             for (int i = 0; i < args.Length; i++)
                 $"    [{i}]: {args[i].Trim()}".Msg();
+
+            try
+            {
+                Logger.Flush();
+                Win32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, 3);
+            }
+            catch
+            {
+                "Unable to resize console window ... aren't you running in GUI mode?".Warn();
+            }
+            finally
+            {
+                Logger.Flush();
+            }
 
             if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
             {
@@ -167,58 +252,21 @@ namespace ASC.Server
 
             string dir = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
             int retcode = 0;
-#if DEBUG
-            AppDomain.MonitoringIsEnabled = true;
-#endif
-            try
-            {
-                Win32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, 3);
-            }
-            catch
-            {
-                "Unable to resize console window ... aren't you running in GUI mode?".Warn();
-            }
 
             Directory.SetCurrentDirectory(dir);
 
             $"Running from '{dir}'".Info();
 
-            if (File.Exists(Win32.RECAPTCHA_SECRET) && ((recaptcha_private = File.ReadAllText(Win32.RECAPTCHA_SECRET)?.Trim() ?? recaptcha_private ?? "").Length > 0))
-                $"Loaded the ReCaptcha private key '{recaptcha_private}'".Ok();
-            else
-                "No ReCaptcha private key could be found, meaning that the register-function will not be available.".Err();
-
             using (Mutex m = new Mutex(false, Win32.MUTEX))
                 try
                 {
-                    if (m.WaitOne(0, false) || containsarg(ARG_IGNMTX))
+                    if (m.WaitOne(0, false) || containsarg(args, ARG_IGNMTX))
                     {
-                        InstallCertificate($@"{dir}\{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root);
-                        InstallCertificate($@"{dir}\{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher);
-
-                        "Setting firewall rules ...".Msg();
-
-                        foreach (int port in new int[] { Win32.PORT, Win32.PORT + 1})
-                        {
-                            if (FirewallUtils.IsPortOpen(port))
-                            {
-                                $"A serive is already running on port {port}. It will be shut down ...".Warn();
-
-                                FirewallUtils.ClosePort(port);
-                            }
-
-                            FirewallUtils.OpenPort(port, "ASC Server");
-
-                            $"Port {port} was successfully registered.".Ok();
-                        }
-
-                        "Firewall rules set.".Ok();
-
-                        if (containsarg(ARG_OFFLINE))
-                            "Server running in offline mode. No internet connection checks will be performed.".Warn();
+                        if (containsarg(args, ARG_SLOWSTART))
+                            foreach (Action<string[]> task in Tasks)
+                                task(args);
                         else
-                            if (!TestConnection())
-                                "No connection to the outside internet could be made. Many of the server's features will only work partially.".Err();
+                            Parallel.ForEach(Tasks, _ => _(args));
 
                         fixed (bool* bptr = &accptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
@@ -230,7 +278,8 @@ namespace ASC.Server
                 }
                 catch (Exception ex)
                 {
-                    ex.Err();
+                    if (ex != null)
+                        ex.Err();
 
                     "Application-forced shutdown ...".Err();
 
@@ -238,7 +287,7 @@ namespace ASC.Server
                 }
                 finally
                 {
-                    if (containsarg(ARG_DELFWL))
+                    if (containsarg(args, ARG_DELFWL))
                     {
                         "Removing previously set firewall rules ...".Msg();
 
@@ -256,7 +305,7 @@ namespace ASC.Server
 
                     "Logging service shutting down.".Info();
 
-                    if (!containsarg(ARG_NOLOG))
+                    if (!containsarg(args, ARG_NOLOG))
                         Logger.Save(Directory.GetCurrentDirectory());
 
                     if (Debugger.IsAttached | (Win32.GetConsoleWindow() != IntPtr.Zero))
@@ -268,8 +317,6 @@ namespace ASC.Server
                 }
 
             return retcode;
-
-            bool containsarg(string arg) => args.Any(_ => _.ToLower().Trim() == arg.ToLower().Trim());
         }
 
         [OperationContract]
@@ -289,6 +336,8 @@ namespace ASC.Server
             using (database = Database.Instance)
                 try
                 {
+                    #region DATABASE INIT
+
                     ascws.tSQL = database;
 #if DEBUG
                     database.DebugMode = true;
@@ -326,20 +375,10 @@ namespace ASC.Server
 
                     Authentification.Start();
 
+                    #endregion
+                    #region MAIN LOOP
+
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
-
-                    {
-                        // testing
-                        foreach (string s in @"foo bar baz test anon topkek".Split())
-                        {
-                            DBUser user = new DBUser {
-                                IsAdmin = s.Length % 4 == 3,
-                                Name = s
-                            };
-
-                            database.AddUser(ref user);
-                        }
-                    }
 
                     accptconnections = true;
 
@@ -351,9 +390,13 @@ namespace ASC.Server
                     accptconnections = false;
 
                     "User-forced shutdown ...".Warn();
+
+                    #endregion
                 }
                 finally
                 {
+                    #region CLEANUP
+
                     accptconnections = false;
 
                     Authentification.Stop();
@@ -363,6 +406,8 @@ namespace ASC.Server
                             database?.DeleteUser(id);
 
                     "Disconnicting from the database ...".Msg();
+
+                    #endregion
                 }
         }
 
@@ -371,7 +416,7 @@ namespace ASC.Server
             object mutex = new object();
             bool res = false;
 
-            Parallel.ForEach(new string[] { "8.8.8.8", "8.8.4.4", "google.com", "wikipedia.org", "4chan.org", "yahoo.com", "microsoft.com", "apple.com" }, (dns, local) => {
+            Parallel.ForEach(PingStations, (dns, local) => {
                 try
                 {
                     using (Ping p = new Ping())
@@ -540,6 +585,12 @@ namespace ASC.Server
             log.AppendLine($"[{now:yyyy-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}");
         });
 
+        internal static void Flush()
+        {
+            while (actions.Count > 0)
+                ;
+        }
+
         internal static void Clear() => actions.Enqueue(() => log.Clear());
 
         internal static void Err(this Exception ex)
@@ -572,8 +623,7 @@ namespace ASC.Server
 
         internal static void Save(this string dir)
         {
-            while (actions.Count > 0)
-                ;
+            Flush();
 
             File.WriteAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
         }

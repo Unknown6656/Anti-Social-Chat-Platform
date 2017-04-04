@@ -16,7 +16,20 @@
     "500": "Dienst derzeitig nicht verfügbar",
     "400": "Ungültige Operation",
     "403": "Zugriff verweigert",
-    "404": "Ressource nicht gefunden"
+    "404": "Ressource nicht gefunden",
+    "redirect": {
+      "pre": "Sie werden zur Hauptseite in",
+      "post": "Sekunden weitergeleited...",
+      "stop": "Weiterleitung stoppen"
+    },
+    "api": {
+      "missingop": "Eine Operation muss angegeben werden.",
+      "unknownop": "Die Operation '{0}' ist unbekannt.",
+      "needsuser": "Sie benötigen ein Benutzerkonto, um diese Operation auszuführen.",
+      "needsadmin": "Sie benötigen ein Administratorkonto, um diese Operation auszuführen.",
+      "malformatted": "Die Operation oder mindestens ein Parameter ist/sind ungültig.<br/><pre class=\"code\">{0}:\n{1}</pre>",
+      "valuerequired": "Es wird ein Wert für '{0}' zur Ausführung der Operation '{1}' benötigt."
+    }
   },
   "unsafe": "Diese Verbindung ist unverschlüsselt. Bitte verbinden Sie sich mit SSL, um eine sichere Verbindung zu gewährleisten.",
   "login": {
@@ -34,7 +47,21 @@
     "blocked": "Der Benutzer mit der gegebenen GUID ist gesperrt und muss von einem Administrator freigeschaltet werden.",
     "explanation": "Sie sind nicht eingeloggt. Bitte verwenden Sie das folgende Formular, um sich einzuloggen.",
     "logout": "Ausloggen",
-    "loggedinas": "Eingeloggt als"
+    "loggedinas": "Eingeloggt als",
+    "suggest": "Besitzen Sie einen Account?",
+    "clickhere": "Klicken Sie hier, um sich einzuloggen.",
+    "register": {
+      "button": "Registrieren",
+      "suggest": "Besitzen Sie noch keinen Account?",
+      "clickhere": "Klicken Sie hier, um sich zu registrieren.",
+      "username": "Ihr Benutzername",
+      "repeatpw": "Wiederholen Sie Ihr Passwort",
+      "missingcaptcha": "Das Captcha muss für eine gültige Registrierung gelöst werden.",
+      "missingparams": "Für eine gültige Registrierung werden Benutzername und Passwort benötigt.",
+      "pwnonequal": "Beide Passwörter müssen identisch sein.",
+      "invalname": "Der Name ist entweder ungültig oder schon in Verwendung.",
+      "fillcaptcha": "Das Captcha muss gelöst werden."
+    }
   },
   "search": {
     "username": "Benutzername",

@@ -16,7 +16,20 @@
     "500": "Service actuellement indisponible",
     "400": "Opération invalide",
     "403": "Permission refusée",
-    "404": "Ressource introuvable"
+    "404": "Ressource introuvable",
+    "redirect": {
+      "pre": "Vous serez redirigé vers le site principal en",
+      "post": "secondes...",
+      "stop": "Arrêter la redirection"
+    },
+    "api": {
+      "missingop": "Une opération doit être spécifiée.",
+      "unknownop": "L'opération '{0}' est inconnue.",
+      "needsuser": "Un compte d'utilisateur est nécessaire pour effectuer cette opération.",
+      "needsadmin": "Un compte d'administrateur est requis pour effectuer cette opération.",
+      "malformatted": "Au moins un paramètre a été mal formaté ou l'opération était invalide.<br/><pre class=\"code\">{0}:\n{1}</pre>",
+      "valuerequired": "Une valeur pour '{0}' est nécessaire lorsque vous utilisez l'opération '{1}'."
+    }
   },
   "unsafe": "Votre connexion n'est pas sécurisée. Envisager de se connecter à ce site via SSL.",
   "login": {
@@ -34,7 +47,21 @@
     "blocked": "L'utilisateur associé à la GUID donnée est bloqué et doit être débloqué par un administrateur.",
     "explanation": "Vous n'êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte.",
     "logout": "Déconnecter",
-    "loggedinas": "Connecté en tant que"
+    "loggedinas": "Connecté en tant que",
+    "suggest": "Vous avez un compte?",
+    "clickhere": "Cliquez ici pour vous identifier.",
+    "register": {
+      "button": "Registrer",
+      "suggest": "Vous n'avez pas de compte?",
+      "clickhere": "Cliquez ici pour vous inscrire.",
+      "username": "Votre nom d'utilisateur",
+      "repeatpw": "Répétez votre mot de passe",
+      "missingcaptcha": "Vous avez oublié de résoudre le Captcha lors de l'inscription.",
+      "missingparams": "Le nom d'utilisateur et le mot de passe sont nécessaires pour une inscription.",
+      "pwnonequal": "Les deux mots de passe donnés doivent être égaux.",
+      "invalname": "Le nom n'est pas valide ou déjà utilisé.",
+      "fillcaptcha": "Le Captcha doit être résolu."
+    }
   },
   "search": {
     "username": "Nom d'utilisateur",

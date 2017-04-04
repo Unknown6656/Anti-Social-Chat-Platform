@@ -7,3 +7,5 @@ var base_uri = '§protocol§://§host§:§port§/';
 var api_uri = base_uri + 'api.json?lang=§lang_code§';
 var session = '';
 var avail_lang = [§lang_avail§];
+var ival_down;
+var ival_sess;

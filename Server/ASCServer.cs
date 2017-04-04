@@ -120,6 +120,7 @@ namespace ASC.Server
                     Session = session ?? ""
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
                 ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), keys: "id"),
+                ["auth_refr_session"] = new ASCOperation((req, res, vals, db) => new { }, ASCOperationPrivilege.User),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), keys: "new"),
                 ["delete_tmp"] = new ASCOperation((req, res, vals, db) => {
                     long id = long.Parse(vals["id"]);
@@ -412,56 +413,68 @@ namespace ASC.Server
 #if DEBUG
                 $"API access: {url}".Info();
 #endif
-                if (contains(request, "operation", out string op))
-                    if (Operations.ContainsKey(op = op.ToLower()))
-                    {
-                        ASCOperation ascop = Operations[op];
-                        Dictionary<string, string> values = new Dictionary<string, string>();
+                if (!contains(request, "operation", out string op))
+                    return error("error_api_missingop");
+                else if (!Operations.ContainsKey(op = op.ToLower()))
+                    return error("error_api_unknownop", args: op);
+                else
+                {
+                    ASCOperation ascop = Operations[op];
+                    Dictionary<string, string> values = new Dictionary<string, string>();
 
-                        foreach (string key in request.QueryString.AllKeys)
+                    foreach (string key in request.QueryString.AllKeys)
+                        if (key != null)
                             values[key] = request.QueryString[key];
 
-                        IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
+                    IEnumerable<string> missing = ascop.Keys.Except(values.Keys);
 
-                        if (missing.Any())
-                            return error("error_api_valuerequired", _400, missing.First(), op);
+                    if (missing.Any())
+                        return error("error_api_valuerequired", _400, missing.First(), op);
 
-                        try
+                    try
+                    {
+                        if (ascop.Privilege > ASCOperationPrivilege.Regular)
                         {
-                            if (ascop.Privilege > ASCOperationPrivilege.Regular)
+                            bool res = contains(request, "id", out string sid);
+
+                            user = default(DBUser);
+
+                            if (contains(request, "hash", out string hash))
+                                res &= verify(request, tSQL, sid, hash, out session);
+                            else if (contains(request, "session", out session))
                             {
-                                bool res = contains(request, "id", out string sid);
+                                res &= tSQL.VerifySession(session);
 
-                                if (contains(request, "hash", out string hash))
-                                    res &= verify(request, tSQL, sid, hash, out session);
-                                else if (contains(request, "session", out session))
-                                    res &= tSQL.VerifySession(session); // TODO
-                                else
-                                    res &= ((user = getsessionuser()) != null)
-                                        & (ascop.Privilege == ASCOperationPrivilege.Administrator ? user.IsAdmin : true);
+                                if (res)
+                                {
+                                    tSQL.AutoLogin(long.Parse(sid), request.RemoteEndPoint.ToString(), request.UserAgent, out session);
 
-                                if (!res)
-                                    return error(ascop.Privilege == ASCOperationPrivilege.Administrator ? "error_api_needsadmin" : "error_api_needsuser", _403);
+                                    user = tSQL.GetUserBySession(session);
+                                }
                             }
+                            else
+                                res &= (user = getsessionuser()) != null;
 
-                            vars["user_session"] = session;
+                            res &= ascop.Privilege == ASCOperationPrivilege.Administrator ? user?.IsAdmin ?? false : true;
 
-                            return ToJSON(new
-                            {
-                                Success = true,
-                                Session = session,
-                                Data = ascop.Handler(request, response, values, tSQL)
-                            });
+                            if (!res)
+                                return error(ascop.Privilege == ASCOperationPrivilege.Administrator ? "error_api_needsadmin" : "error_api_needsuser", _403);
                         }
-                        catch (Exception ex)
+
+                        vars["user_session"] = session;
+
+                        return ToJSON(new
                         {
-                            return error("error_api_malformatted", _400, ex.Message, ex.StackTrace);
-                        }
+                            Success = true,
+                            Session = session,
+                            Data = ascop.Handler(request, response, values, tSQL)
+                        });
                     }
-                    else
-                        return error("error_api_unknownop", args: op);
-                else
-                    return error("error_api_missingop");
+                    catch (Exception ex)
+                    {
+                        return error("error_api_malformatted", _400, ex.Message, ex.StackTrace);
+                    }
+                }
             }
 
             #endregion
