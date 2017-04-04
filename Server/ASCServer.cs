@@ -443,13 +443,15 @@ namespace ASC.Server
                                 res &= verify(request, tSQL, sid, hash, out session);
                             else if (contains(request, "session", out session))
                             {
-                                res &= tSQL.VerifySession(session);
+                                res |= tSQL.VerifySession(session);
 
                                 if (res)
                                 {
-                                    tSQL.AutoLogin(long.Parse(sid), request.RemoteEndPoint.ToString(), request.UserAgent, out session);
+                                    DBUser temp = tSQL.GetUserBySession(session);
 
-                                    user = tSQL.GetUserBySession(session);
+                                    tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, out session);
+
+                                    user = temp; // copy after login due to possible failure
                                 }
                             }
                             else
