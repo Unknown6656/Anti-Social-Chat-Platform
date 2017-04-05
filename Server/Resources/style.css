@@ -37,16 +37,17 @@ hr {
     border-color: #a99165;
 }
 
+#header .github-fork-ribbon::after,
 .frakur {
     font-family: 'UnifrakturCook', cursive;
 }
 
 .blurred {
-    -webkit-filter: blur(10px);
-       -moz-filter: blur(10px);
-        -ms-filter: blur(10px);
-         -o-filter: blur(10px);
-            filter: blur(10px);
+    -webkit-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
+    -moz-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
+    -ms-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
+    -o-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
+    filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
 }
 
 .code {
@@ -68,6 +69,7 @@ button,
 
 input[type=text],
 input[type=password] {
+    font-family: 'Ubuntu Mono', 'Courier New', 'Lucida Console', Courier, Consolas, monospace;
     min-width: 400px;
 }
 
@@ -122,6 +124,16 @@ a, input, button, body, #main {
     cursor: pointer;
 }
 
+#header:not(.blurred),
+#content:not(.blurred),
+#footer:not(.blurred) {
+    -webkit-transition: -webkit-filter .4s;
+       -moz-transition:    -moz-filter .4s;
+        -ms-transition:     -ms-filter .4s;
+         -o-transition:      -o-filter .4s;
+            transition:         filter .4s;
+}
+
 #header,
 #footer {
     background-color: #333;
@@ -157,6 +169,15 @@ a, input, button, body, #main {
 
 #header #flag:hover::after {
 
+}
+
+#header .github-fork-ribbon {
+    font-size: 14pt;
+    z-index: 800;
+}
+
+#header .github-fork-ribbon::before {
+    background-color: #9a4b2e;
 }
 
 #footer {
@@ -221,6 +242,7 @@ a, input, button, body, #main {
     top: 0px;
 }
 
+#globalmessage,
 #lang_change_form {
     background-color: #444;
     border: 1px solid #888;
@@ -228,16 +250,19 @@ a, input, button, body, #main {
     border-radius: 20px;
     margin-left: -270px;
     position: fixed;
-    display: none;
-    z-index: 1010;
     height: 300px;
     width: 500px;
-    top: 200px;
     left: 50%;
 
     -webkit-box-shadow: 7px 14px 48px 1px rgba(0,0,0,0.72);
-       -moz-box-shadow: 7px 14px 48px 1px rgba(0,0,0,0.72);
-            box-shadow: 7px 14px 48px 1px rgba(0,0,0,0.72);
+    -moz-box-shadow: 7px 14px 48px 1px rgba(0,0,0,0.72);
+    box-shadow: 7px 14px 48px 1px rgba(0,0,0,0.72);
+}
+
+#lang_change_form {
+    z-index: 1010;
+    display: none;
+    top: 200px;
 }
 
 #lang_change_form > span {
@@ -277,9 +302,41 @@ a, input, button, body, #main {
     padding: 5px 5px 5px 90px;
 }
 
+#globalmessage {
+    z-index: 1012;
+    top: -400px;
+
+    transition: all, .4s;
+}
+
+#globalmessage span {
+    text-align: center;
+    display: block;
+}
+
+#globalmessage input[type=button] {
+    position: absolute;
+    bottom: 20px;
+    left: 160px;
+}
+
+#globalmessage.open {
+    top: 200px;
+}
+
+#globalmessage.red {
+    background-color: #633;
+    color: #fcc;
+}
+
+#globalmessage.green {
+    background-color: #363;
+    color: #cfc;
+}
+
 @media all and (max-width : 799px) {
     /* TODO : phones; */
-        body {
+    body {
         min-width: 320px;
     }
 

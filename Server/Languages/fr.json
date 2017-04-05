@@ -72,6 +72,8 @@
   },
   "global": {
     "title": "Plate-forme de chat anti-social",
-    "descr": "C'est la plate-forme officielle de chat anti-social"
+    "descr": "C'est la plate-forme officielle de chat anti-social",
+    "fork": "Fork me on GitHub", // TODO: change (?)
+    "ok": "OK"
   }
 }

@@ -9,3 +9,4 @@ var session = '';
 var avail_lang = [§lang_avail§];
 var ival_down;
 var ival_sess;
+var inner; // jquery inner

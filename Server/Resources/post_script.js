@@ -1,9 +1,9 @@
 /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
 
 $(document).ready(function () {
-    var inner = $('#header, #content, #footer');
-
     $('#noscript').css('display', 'none');
+
+    inner = $('#header, #content, #footer');
     inner.removeClass('blurred');
 
     session = $.cookie("_sess");
@@ -95,12 +95,25 @@ $(document).ready(function () {
         });
     });
     $('#flag').click(function () {
+        $(document).keyup(esc_lang);
         $('#lang_change_bg, #lang_change_form').css('display', 'block');
         $('#lang_change_form > div.lang_container').height(270 - $('#lang_change_form > span').height());
         inner.addClass('blurred');
     });
     $('#lang_change_bg').click(function () {
+        try {
+            $(document).unbind(esc_lang);
+        } catch (e) { }
+
         $('#lang_change_bg, #lang_change_form').css('display', 'none');
+        inner.removeClass('blurred');
+    });
+    $('#globalmessage input[type=button]').click(function () {
+        try {
+            $(document).unbind(esc_msg);
+        } catch (e) { }
+
+        $('#globalmessage').removeClass('open').removeClass('red').removeClass('green');
         inner.removeClass('blurred');
     });
 
@@ -190,11 +203,10 @@ $(document).ready(function () {
                     response = response.Data;
                     var hash = gethash(pass, response.Salt);
 
-                    if (ajax("auth_change_pw", `id=${response.ID}&hash=${response.Hash}&newhash=${hash}`)) {
-
-
-                        // TODO
-                    }
+                    if (ajax("auth_change_pw", `id=${response.ID}&hash=${response.Hash}&newhash=${hash}`))
+                        printreginfo(`
+ // TODO
+`);
                     else
                         throw null;
                 } catch (e) {
@@ -214,8 +226,18 @@ function deletecookie(name) {
     $.cookie(name, null, { path: '/' });
 }
 
+function printreginfo(resp) {
+    $(document).keyup(esc_msg);
+    $('#globalmessage').addClass('open green');
+    $('#globalmessage span').html(resp);
+    inner.addClass('blurred');
+}
+
 function printerror(msg) {
-    alert(msg); // TODO : better error notification
+    $(document).keyup(esc_msg);
+    $('#globalmessage').addClass('open red');
+    $('#globalmessage span').html(msg);
+    inner.addClass('blurred');
 }
 
 function ajax(operation, params) {
@@ -223,8 +245,6 @@ function ajax(operation, params) {
 
     var uri = `${api_uri}&session=${session}&operation=${operation}&${params}`;
     var result;
-
-    console.log(session);
 
     $.ajax({
         url: uri,
@@ -241,8 +261,6 @@ function ajax(operation, params) {
             $.cookie('_sess', session = result.Session);
     } catch (e) {
     }
-
-    console.log(session);
 
     upatesession();
 
@@ -277,5 +295,15 @@ function upatesession() {
 
     ival_sess = setInterval(function () {
         ajax('auth_refr_session', null);
-    }, 12000);
+    }, 120000);
+}
+
+function esc_lang(e) {
+    if (e.keyCode == 27)
+        $('#lang_change_bg').click();
+}
+
+function esc_msg(e) {
+    if ((e.keyCode == 27) | (e.keyCode == 13))
+        $('#globalmessage input[type=button]').click();
 }

@@ -72,6 +72,8 @@
   },
   "global": {
     "title": "Anti-Social Chat Platform",
-    "descr": "This is the official anti-social chat platform"
+    "descr": "This is the official anti-social chat platform",
+    "fork": "Fork me on GitHub",
+    "ok": "OK"
   }
 }
