@@ -1,5 +1,7 @@
 /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
 
+// I cannot use the ES6-backtick syntax, because of incompatiblity with older browsers -__-
+
 $(document).ready(function () {
     $('#noscript').css('display', 'none');
 
@@ -19,11 +21,11 @@ $(document).ready(function () {
     if (§ssl§/* server-generated */)
         $('#ssl_warning').css('display', 'none');
     else
-        $('#ssl_warning a').attr('href', https_uri + `§url§`);
+        $('#ssl_warning a').attr('href', https_uri + '§url§');
 
     $(window).resize(function () {
         $('#ssl_warning').css('top', $('#header').height() + 20);
-        });
+    });
 
     $('#title').click(function () {
         window.location.href = base_uri;
@@ -47,7 +49,7 @@ $(document).ready(function () {
         try {
             var guid = $('#_guid').val();
             var pass = $('#_password').val();
-            var user = ajax("user_by_guid", `guid=${guid}`).Data;
+            var user = ajax("user_by_guid", 'guid=' + guid).Data;
 
             if (user.IsBlocked) {
                 alert("§login_blocked§");
@@ -56,22 +58,22 @@ $(document).ready(function () {
             }
 
             var id = user.ID;
-            var salt = ajax("auth_salt", `id=${id}`).Data;
+            var salt = ajax("auth_salt", 'id=' + id).Data;
             var hash = gethash(pass, salt);
-            var res = ajax("auth_login", `id=${id}&hash=${hash}`).Data;
+            var res = ajax("auth_login", 'id=' + id + '&hash=' + hash).Data;
 
             if (res.Success) {
                 session = res.Session;
 
                 $.cookie("_sess", session, { expires: 3600 });
 
-                window.location.assign(`§protocol§://§host§:§port§§url§`);
+                window.location.assign('§protocol§://§host§:§port§§url§');
             }
             else
                 throw null;
         }
         catch (ex) {
-            printerror(`§login_invalid§`);
+            printerror('§login_invalid§');
         }
     });
     $('#_login form').submit(function (event) { event.preventDefault(); });
@@ -84,14 +86,15 @@ $(document).ready(function () {
         ajax('user_by_name', 'name=' + query).Data.forEach(function (item) {
             var user = item.Item1;
 
-            listview.html(`${listview.html()}
-<div class="${user.IsAdmin ? `admin` : ``} ${user.IsBlocked ? `locked` : ``}">
-    <div>
-        <b>${user.Name}${user.IsAdmin ? ` [§search_admin§]` : ``}${user.IsBlocked ? ` [§search_locked§]` : ``}</b> &#160; 
-        <i class="code">{${user.UUID.toUpperCase()}}</i><br/>
-        §search_membersince§: <span class="code">${user.MemberSince}</span>
-    </div>
-</div>`);
+            listview.html(listview.html() + '\
+<div class="' + (user.IsAdmin ? 'admin ' : ' ') + (user.IsBlocked ? 'locked' : '') + '">\
+    <div>\
+        <b>' + user.Name + (user.IsAdmin ? ' [§search_admin§]' : '') + (user.IsBlocked ? ' [§search_locked§]' : '') + '</b> &#160;\
+        <i class="code">{' + user.UUID.toUpperCase() + '}</i><br/>\
+        §search_membersince§:\
+        <span class="code">' + user.MemberSince + '</span>\
+    </div>\
+</div>');
         });
     });
     $('#flag').click(function () {
@@ -118,13 +121,13 @@ $(document).ready(function () {
     });
 
     avail_lang.forEach(function (lang) {
-        var nfo = ajax('lang_info', `code=${lang}`);
+        var nfo = ajax('lang_info', 'code=' + lang);
 
         if (nfo.Success)
-            $('#lang_change_form > div.lang_container').html(`${$('#lang_change_form > div.lang_container').html()}
-<div class="lang_option" data-lang="${lang}" style="background: url('res~ico_${lang}~image/png') no-repeat #666;">
-    ${lang.toUpperCase()}/${nfo.Data.Name} - ${nfo.Data.EnglishName} ${nfo.Data.IsBeta ? ` &#160; <i>(beta)</i>` : ``}
-</div>`);
+            $('#lang_change_form > div.lang_container').html($('#lang_change_form > div.lang_container').html() +
+'<div class="lang_option" data-lang="' + lang + '" style="background: url(\'res~ico_' + lang + '~image/png\') no-repeat #666;">\
+    ' + lang.toUpperCase() + '/' + nfo.Data.Name + ' - ' + nfo.Data.EnglishName + ' ' + (nfo.Data.IsBeta ? ' &#160; <i>(beta)</i>' : '') +
+'</div>');
     });
     $('#lang_change_form > div.lang_container > div.lang_option').click(function () {
         var lang = $(this).attr('data-lang');
@@ -140,7 +143,7 @@ $(document).ready(function () {
         if ((user != undefined) && (user != null)) {
             $('#footer').css('display', 'block');
             $('#_logout').click(gotomainsite);
-            $('#_userinfo').html(`<b>${user.Name} <code>{${user.UUID}}</code></b>`);
+            $('#_userinfo').html('<b>' + user.Name + ' <code>{' + user.UUID + '}</code></b>');
         }
     } catch (e) { }
 
@@ -170,19 +173,19 @@ $(document).ready(function () {
         var name = $('#_regname').val();
         var pass = $('#_regpw1').val();
 
-        if (!ajax('can_use_name', `name=${name}`).Data)
-            printerror(`§login_register_invalname§`);
+        if (!ajax('can_use_name', 'name=' + name).Data)
+            printerror('§login_register_invalname§');
         else if (pass != $('#_regpw2').val())
-            printerror(`§login_register_pwnonequal§`);
+            printerror('§login_register_pwnonequal§');
         else if ($('.g-recaptcha textarea').val() == "")
-            printerror(`§login_register_fillcaptcha§`);
+            printerror('§login_register_fillcaptcha§');
         else {
             var formdata = $(this).serialize();
             var response = (function () {
                 var result;
 
                 $.ajax({
-                    url: `${api_uri}&operation=auth_register&name=${name}`,
+                    url: api_uri + '&operation=auth_register&name=' + name,
                     type: 'get',
                     async: false,
                     cache: false,
@@ -203,14 +206,14 @@ $(document).ready(function () {
                     response = response.Data;
                     var hash = gethash(pass, response.Salt);
 
-                    if (ajax("auth_change_pw", `id=${response.ID}&hash=${response.Hash}&newhash=${hash}`))
-                        printreginfo(`
- // TODO
-`);
+                    if (ajax("auth_change_pw", 'id=' + response.ID + '&hash=' + response.Hash + '&newhash=' + hash))
+                        printreginfo('\
+ // TODO \
+');
                     else
                         throw null;
                 } catch (e) {
-                    ajax("delete_tmp", `id=${response.ID}&hash=${response.Hash}`);   
+                    ajax("delete_tmp", 'id=' + response.ID + '&hash=' + response.Hash);   
                 }
         }
 
@@ -243,7 +246,7 @@ function printerror(msg) {
 function ajax(operation, params) {
     clearInterval(ival_sess);
 
-    var uri = `${api_uri}&session=${session}&operation=${operation}&${params}`;
+    var uri = api_uri + '&session=' + session + '&operation=' + operation + '&' + params;
     var result;
 
     $.ajax({
@@ -275,7 +278,7 @@ function getlanguages() {
     var langs;
 
     $.ajax({
-        url: `${api_uri}&operation=available_lang&session=${session}`,
+        url: api_uri + '&operation=available_lang&session=' + session,
         async: false
     }).done(function () {
         langs = $(this).Data;

@@ -11,7 +11,7 @@
   },
   "error": {
     "noscript": "You need to enable Javascript to use this website properly.",
-    "webkit": "You should use a webkit-based browser to enjoy all of the page's features.",
+    "webkit": "You should use a webkit-based browser to enjoy all of the page&quot;s features.",
     "error": "Error",
     "500": "Service currently not available",
     "400": "Invalid operation",
@@ -24,11 +24,11 @@
     },
     "api": {
       "missingop": "An operation must be specified.",
-      "unknownop": "The operation '{0}' is unknown.",
+      "unknownop": "The operation &quot;{0}&quot; is unknown.",
       "needsuser": "An user account is required to perform this operation.",
       "needsadmin": "An administrator account is required to perform this operation.",
       "malformatted": "At least one parameter was mal-formatted or the operation was invalid.<br/><pre class=\"code\">{0}:\n{1}</pre>",
-      "valuerequired": "A value for '{0}' is required when using the operation '{1}'."
+      "valuerequired": "A value for &quot;{0}&quot; is required when using the operation &quot;{1}&quot;."
     }
   },
   "unsafe": "Your connection is not safe. Consider connecting to this website via SSL.",

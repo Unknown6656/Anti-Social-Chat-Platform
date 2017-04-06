@@ -24,14 +24,14 @@
     },
     "api": {
       "missingop": "Une opération doit être spécifiée.",
-      "unknownop": "L'opération '{0}' est inconnue.",
-      "needsuser": "Un compte d'utilisateur est nécessaire pour effectuer cette opération.",
-      "needsadmin": "Un compte d'administrateur est requis pour effectuer cette opération.",
-      "malformatted": "Au moins un paramètre a été mal formaté ou l'opération était invalide.<br/><pre class=\"code\">{0}:\n{1}</pre>",
-      "valuerequired": "Une valeur pour '{0}' est nécessaire lorsque vous utilisez l'opération '{1}'."
+      "unknownop": "L&quot;opération &quot;{0}&quot; est inconnue.",
+      "needsuser": "Un compte d&quot;utilisateur est nécessaire pour effectuer cette opération.",
+      "needsadmin": "Un compte d&quot;administrateur est requis pour effectuer cette opération.",
+      "malformatted": "Au moins un paramètre a été mal formaté ou l&quot;opération était invalide.<br/><pre class=\"code\">{0}:\n{1}</pre>",
+      "valuerequired": "Une valeur pour &quot;{0}&quot; est nécessaire lorsque vous utilisez l&quot;opération &quot;{1}&quot;."
     }
   },
-  "unsafe": "Votre connexion n'est pas sécurisée. Envisager de se connecter à ce site via SSL.",
+  "unsafe": "Votre connexion n&quot;est pas sécurisée. Envisager de se connecter à ce site via SSL.",
   "login": {
     "button": "Login",
     "password": {
@@ -39,32 +39,32 @@
       "description": "Votre mot de passe"
     },
     "guid": {
-      "placeholder": "Identifiant GUID d'utilisateur",
+      "placeholder": "Identifiant GUID d&quot;utilisateur",
       "description": "Votre GUID",
       "annotation": "Une chaîne qui a le format <code>{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}</code> où <code>x</code> représente un caractère hexadécimal"
     },
-    "invalid": "L'identifiant GUID et/ou le mot de passe donnés sont invalides.",
-    "blocked": "L'utilisateur associé à la GUID donnée est bloqué et doit être débloqué par un administrateur.",
-    "explanation": "Vous n'êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte.",
+    "invalid": "L&quot;identifiant GUID et/ou le mot de passe donnés sont invalides.",
+    "blocked": "L&quot;utilisateur associé à la GUID donnée est bloqué et doit être débloqué par un administrateur.",
+    "explanation": "Vous n&quot;êtes pas connecté. Veuillez utiliser le formulaire ci-dessous pour vous connecter à votre compte.",
     "logout": "Déconnecter",
     "loggedinas": "Connecté en tant que",
     "suggest": "Vous avez un compte?",
     "clickhere": "Cliquez ici pour vous identifier.",
     "register": {
       "button": "Registrer",
-      "suggest": "Vous n'avez pas de compte?",
+      "suggest": "Vous n&quot;avez pas de compte?",
       "clickhere": "Cliquez ici pour vous inscrire.",
-      "username": "Votre nom d'utilisateur",
+      "username": "Votre nom d&quot;utilisateur",
       "repeatpw": "Répétez votre mot de passe",
-      "missingcaptcha": "Vous avez oublié de résoudre le Captcha lors de l'inscription.",
-      "missingparams": "Le nom d'utilisateur et le mot de passe sont nécessaires pour une inscription.",
+      "missingcaptcha": "Vous avez oublié de résoudre le Captcha lors de l&quot;inscription.",
+      "missingparams": "Le nom d&quot;utilisateur et le mot de passe sont nécessaires pour une inscription.",
       "pwnonequal": "Les deux mots de passe donnés doivent être égaux.",
-      "invalname": "Le nom n'est pas valide ou déjà utilisé.",
+      "invalname": "Le nom n&quot;est pas valide ou déjà utilisé.",
       "fillcaptcha": "Le Captcha doit être résolu."
     }
   },
   "search": {
-    "username": "Nom d'utilisateur",
+    "username": "Nom d&quot;utilisateur",
     "forgot": "Vous avez oublié votre GUID?<br/>Vous pouvez rechercher ici votre GUID en utilisant votre nom visible:",
     "membersince": "Membre depuise",
     "admin": "Administrateur",
@@ -72,7 +72,7 @@
   },
   "global": {
     "title": "Plate-forme de chat anti-social",
-    "descr": "C'est la plate-forme officielle de chat anti-social",
+    "descr": "C&quot;est la plate-forme officielle de chat anti-social",
     "fork": "Fork me on GitHub", // TODO: change (?)
     "ok": "OK"
   }

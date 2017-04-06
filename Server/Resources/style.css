@@ -137,6 +137,7 @@ a, input, button, body, #main {
 #header,
 #footer {
     background-color: #333;
+    min-width: 800px;
     position: fixed;
     z-index: 500;
     width: 100%;

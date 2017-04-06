@@ -11,7 +11,7 @@
   },
   "error": {
     "noscript": "Javascript muss aktiviert sein, um diese Webseite vollständig nutzen zu können.",
-    "webkit": "You should use a webkit-based browser to enjoy all of the page's features.", // TODO
+    "webkit": "You should use a webkit-based browser to enjoy all of the page&quot;s features.", // TODO
     "error": "Fehler",
     "500": "Dienst derzeitig nicht verfügbar",
     "400": "Ungültige Operation",
@@ -24,11 +24,11 @@
     },
     "api": {
       "missingop": "Eine Operation muss angegeben werden.",
-      "unknownop": "Die Operation '{0}' ist unbekannt.",
+      "unknownop": "Die Operation &quot;{0}&quot; ist unbekannt.",
       "needsuser": "Sie benötigen ein Benutzerkonto, um diese Operation auszuführen.",
       "needsadmin": "Sie benötigen ein Administratorkonto, um diese Operation auszuführen.",
       "malformatted": "Die Operation oder mindestens ein Parameter ist/sind ungültig.<br/><pre class=\"code\">{0}:\n{1}</pre>",
-      "valuerequired": "Es wird ein Wert für '{0}' zur Ausführung der Operation '{1}' benötigt."
+      "valuerequired": "Es wird ein Wert für &quot;{0}&quot; zur Ausführung der Operation &quot;{1}&quot; benötigt."
     }
   },
   "unsafe": "Diese Verbindung ist unverschlüsselt. Bitte verbinden Sie sich mit SSL, um eine sichere Verbindung zu gewährleisten.",
