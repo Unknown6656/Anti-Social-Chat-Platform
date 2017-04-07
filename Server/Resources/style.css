@@ -38,8 +38,9 @@ hr {
 }
 
 #header .github-fork-ribbon::after,
+h1, h2, h3, h4, h5, h6,
 .frakur {
-    font-family: 'UnifrakturCook', cursive;
+    font-family: 'UnifrakturCook', 'Breitkopf Fraktur', 'Breitkopf Fraktur', 'Kleist-Fraktur', 'Zentenar Fraktur', 'Kliment Std', serif;
 }
 
 .blurred {
@@ -48,6 +49,8 @@ hr {
     -ms-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
     -o-filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
     filter: blur(10px) grayscale(50%) contrast(50%) brightness(70%);
+    filter: url(#svg-blur); /* OLD FIREFOX */
+    filter: progid:DXImageTransform.Microsoft.Blur(PixelRadius='10'); /* OLD IE (< v9) */
 }
 
 .code {
@@ -61,10 +64,14 @@ button,
 #_guids {
     background-color: #444;
     border: 1px solid #aaa;
-    color: #ccc;
     border-radius: 4px;
+    color: #ccc;
     padding: 3px;
     margin: 5px;
+
+    -webkit-transition: background-color .3s;
+       -moz-transition: background-color .3s;
+            transition: background-color .3s;
 }
 
 input[type=text],
@@ -78,6 +85,12 @@ input[type=button],
 input[type=submit] {
     min-width: 200px;
     cursor: pointer;
+}
+
+button:hover,
+input[type=button]:hover,
+input[type=submit]:hover {
+    background-color: #666;
 }
 
 body {
@@ -105,7 +118,6 @@ a, input, button, body, #main {
 }
 
 #noscript span {
-    font-family: 'UnifrakturCook', cursive;
     text-align: center;
     color: #f55;
     font-size: 3em;
@@ -137,7 +149,7 @@ a, input, button, body, #main {
 #header,
 #footer {
     background-color: #333;
-    min-width: 800px;
+    min-width: 810px;
     position: fixed;
     z-index: 500;
     width: 100%;
@@ -251,7 +263,6 @@ a, input, button, body, #main {
     border-radius: 20px;
     margin-left: -270px;
     position: fixed;
-    height: 300px;
     width: 500px;
     left: 50%;
 
@@ -263,6 +274,7 @@ a, input, button, body, #main {
 #lang_change_form {
     z-index: 1010;
     display: none;
+    height: 300px;
     top: 200px;
 }
 
@@ -304,6 +316,7 @@ a, input, button, body, #main {
 }
 
 #globalmessage {
+    min-height: 100px;
     z-index: 1012;
     top: -400px;
 
@@ -311,6 +324,7 @@ a, input, button, body, #main {
 }
 
 #globalmessage span {
+    margin-bottom: 50px;
     text-align: center;
     display: block;
 }
@@ -322,7 +336,7 @@ a, input, button, body, #main {
 }
 
 #globalmessage.open {
-    top: 200px;
+    top: 10%;
 }
 
 #globalmessage.red {
@@ -333,6 +347,19 @@ a, input, button, body, #main {
 #globalmessage.green {
     background-color: #363;
     color: #cfc;
+}
+
+#globalmessage span.code {
+    background-color: #555;
+    border: 1px solid #888;
+    word-break: break-word;
+    white-space: pre-line;
+    border-radius: 5px;
+    max-width: 500px;
+    text-align: left;
+    display: block;
+    margin: 10px;
+    padding: 5px;
 }
 
 @media all and (max-width : 799px) {

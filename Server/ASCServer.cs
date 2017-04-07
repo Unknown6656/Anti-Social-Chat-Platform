@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using Resources = ASC.Server.Properties.Resources;
 
 using static ASC.Server.StatusCode;
+using System.Runtime.CompilerServices;
 
 namespace ASC.Server
 {
@@ -31,10 +32,11 @@ namespace ASC.Server
         internal static readonly Regex REGEX_MOBILEVERSION = new Regex(@"1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
         internal static readonly Regex REGEX_MOBILE = new Regex(@"android|(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Compiled);
 
+        internal static dynamic Unit { get; } = new { };
+
         internal static string NonExistantPath { get; set; } // only used for client-side cookies
         internal static Dictionary<long, DBUser> TemporaryUsers { get; } = new Dictionary<long, DBUser>();
         internal static Dictionary<string, Dictionary<string, string>> LanguagePacks { get; }
-        internal static Dictionary<string, ASCOperation> Operations { get; }
         internal static Dictionary<StatusCode, string> StatusCodes { get; } = new Dictionary<StatusCode, string>
         {
             [StatusCode._200] = "OK",
@@ -44,6 +46,7 @@ namespace ASC.Server
             [StatusCode._420] = "420/Weed",
             [StatusCode._500] = "Server Error",
         };
+        internal Dictionary<string, ASCOperation> Operations { get; }
         internal (int HTTP, int HTTPS) Ports { get; }
         internal Func<int, bool> SSL { get; }
         internal string ServerString { get; }
@@ -53,15 +56,40 @@ namespace ASC.Server
         private readonly bool* acceptconnections;
 
 
-        static ASCServer()
-        {
-            LanguagePacks = (from f in Directory.GetFiles($@"{Directory.GetCurrentDirectory()}\Languages", "*.json", SearchOption.AllDirectories)
-                             let nfo = new FileInfo(f)
-                             let code = nfo.Name.Replace(nfo.Extension, "")
-                             select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
+        static ASCServer() => LanguagePacks = (from f in Directory.GetFiles($@"{Directory.GetCurrentDirectory()}\Languages", "*.json", SearchOption.AllDirectories)
+                                               let nfo = new FileInfo(f)
+                                               let code = nfo.Name.Replace(nfo.Extension, "")
+                                               select (code, BuildLanguageDictionary(f))).ToDictionary(_ => _.Item1, _ => _.Item2);
 
+        /// <summary>
+        /// Creates a new instance
+        /// </summary>
+        /// <param name="port">The HTTP port</param>
+        /// <param name="accept">A pointer to an boolean value, which indicates whether the server shall accept incomming requests</param>
+        /// <param name="tsql">The underlying Transact-SQL [tSQL] database</param>
+        public ASCServer(int port, bool* accept, Database tsql)
+        {
+            acceptconnections = accept;
+
+            foreach (KeyValuePair<string, Dictionary<string, string>> dic in LanguagePacks)
+                $"Language dictionary '{dic.Value["lang_name"]} ({dic.Key})' loaded.".Ok();
+
+            ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version} Unknown6656/420.1337.14.88";
             Operations = new Dictionary<string, ASCOperation>
             {
+                #region PUBLIC TOOLS
+
+                ["server_info"] = new ASCOperation(delegate
+                {
+                    return new
+                    {
+                        ServerString = this.ServerString,
+                        ServerTime = DateTime.Now,
+                        IsOnline = true,
+                        ServerGUID = Win32.GUID,
+                        SupportedLanguages = LanguagePacks.Keys.ToArray(),
+                    };
+                }),
                 ["available_lang"] = new ASCOperation((req, res, vals, db) => LanguagePacks.Keys.ToArray()),
                 ["lang_pack"] = new ASCOperation((req, res, vals, db) => LanguagePacks[vals["code"].ToLower()], keys: "lang"),
                 ["lang_info"] = new ASCOperation((req, res, vals, db) =>
@@ -79,6 +107,10 @@ namespace ASC.Server
                 ["user_by_id"] = new ASCOperation((req, res, vals, db) => db.GetUser(long.Parse(vals["id"])), keys: "id"),
                 ["user_by_guid"] = new ASCOperation((req, res, vals, db) => db.GetUser(Guid.Parse(vals["guid"])), keys: "guid"),
                 ["can_use_name"] = new ASCOperation((req, res, vals, db) => db.ValidateUserName(vals["name"]) && db.CanChangeName(vals["name"]), keys: "name"),
+
+                #endregion
+                #region PRIVATE / AUTHENTIFICATION TOOLS
+
                 ["auth_register"] = new ASCOperation((req, res, vals, db) => {
                     ReCaptchaResult result = null;
 
@@ -113,13 +145,14 @@ namespace ASC.Server
 
                     throw null;
                 }, ASCOperationPrivilege.Regular, "name", "g-recaptcha-response"),
+                ["auth_verify_sesion"] = new ASCOperation((req, res, vals, db) => db.VerifySession(vals["session"]), keys: "session"),
+                ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), keys: "id"),
                 ["auth_change_pw"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["newhash"]), ASCOperationPrivilege.User, "newhash"),
                 ["auth_login"] = new ASCOperation((req, res, vals, db) => new
                 {
                     Success = verify(req, db, vals["id"], vals["hash"], out string session),
                     Session = session ?? ""
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
-                ["auth_salt"] = new ASCOperation((req, res, vals, db) => db.GetUserSalt(long.Parse(vals["id"])), keys: "id"),
                 ["auth_refr_session"] = new ASCOperation((req, res, vals, db) => new { }, ASCOperationPrivilege.User),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), keys: "new"),
                 ["delete_tmp"] = new ASCOperation((req, res, vals, db) => {
@@ -137,33 +170,21 @@ namespace ASC.Server
                     return result;
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
 
+                #endregion
                 #region ADMINISTRATIVE TOOLS
 
                 ["raw_sql"] = new ASCOperation((req, res, vals, db) => JsonConvert.DeserializeObject(Database.DatabaseHelper.ExecuteToJSON(vals["cmd"])), ASCOperationPrivilege.Administrator, "cmd"),
-                ["save_log"] = new ASCOperation((req, res, vals, db) => {
+                ["save_log"] = new ASCOperation(delegate {
                     Logger.Save(Directory.GetCurrentDirectory());
 
-                    return new { };
+                    return Unit;
+                }, ASCOperationPrivilege.Administrator),
+                ["shutdown"] = new ASCOperation(delegate {
+                    throw new ForcedShutdown();
                 }, ASCOperationPrivilege.Administrator),
 
                 #endregion
             };
-        }
-
-        /// <summary>
-        /// Creates a new instance
-        /// </summary>
-        /// <param name="port">The HTTP port</param>
-        /// <param name="accept">A pointer to an boolean value, which indicates whether the server shall accept incomming requests</param>
-        /// <param name="tsql">The underlying Transact-SQL [tSQL] database</param>
-        public ASCServer(int port, bool* accept, Database tsql)
-        {
-            acceptconnections = accept;
-
-            foreach (KeyValuePair<string, Dictionary<string, string>> dic in LanguagePacks)
-                $"Language dictionary '{dic.Value["lang_name"]} ({dic.Key})' loaded.".Ok();
-
-            ServerString = $"ASC Server/{Assembly.GetExecutingAssembly().GetName().Version} Unknown6656/420.1337.14.88";
 
             tSQL = tsql;
             Ports = (port, port + 1);
@@ -272,6 +293,7 @@ namespace ASC.Server
         {
             #region INIT
 
+            DateTime dt_req = DateTime.Now;
             Dictionary<string, object> vars = new Dictionary<string, object> {
                 ["nexpath"] = NonExistantPath
             };
@@ -404,6 +426,7 @@ namespace ASC.Server
             vars["user_agent"] = request.UserAgent;
             vars["user_host"] = request.UserHostName;
             vars["user_addr"] = request.UserHostAddress;
+            vars["main_page"] = "false";
 
             #endregion
             #region OPERATION REQUEST
@@ -438,24 +461,29 @@ namespace ASC.Server
                             bool res = contains(request, "id", out string sid);
 
                             user = default(DBUser);
+                            session = null;
 
                             if (contains(request, "hash", out string hash))
                                 res &= verify(request, tSQL, sid, hash, out session);
-                            else if (contains(request, "session", out session))
-                            {
-                                res |= tSQL.VerifySession(session);
 
-                                if (res)
+                            if (session == null)
+                                if (contains(request, "session", out session))
                                 {
-                                    DBUser temp = tSQL.GetUserBySession(session);
+                                    res |= tSQL.VerifySession(session);
 
-                                    tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, out session);
+                                    if (res)
+                                    {
+                                        DBUser temp = tSQL.GetUserBySession(session);
 
-                                    user = temp; // copy after login due to possible failure
+                                        tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, out session);
+
+                                        user = temp; // copy after login due to possible failure
+                                    }
                                 }
-                            }
-                            else
-                                res &= (user = getsessionuser()) != null;
+                                else
+                                    res &= (user = getsessionuser()) != null;
+                            else if (long.TryParse(sid, out long id))
+                                user = tSQL.GetUser(id);
 
                             res &= ascop.Privilege == ASCOperationPrivilege.Administrator ? user?.IsAdmin ?? false : true;
 
@@ -469,8 +497,16 @@ namespace ASC.Server
                         {
                             Success = true,
                             Session = session,
-                            Data = ascop.Handler(request, response, values, tSQL)
+                            Data = ascop.Handler(request, response, values, tSQL),
+                            TimeStamp = new {
+                                Raw = dt_req,
+                                SinceUnix = new DateTimeOffset(dt_req).ToUnixTimeMilliseconds(),
+                            },
                         });
+                    }
+                    catch (ForcedShutdown)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -502,6 +538,7 @@ namespace ASC.Server
                 vars["user"] =
                 vars["user_auth"] = "undefined";
                 vars["inner"] = FetchResource(Resources.login, vars);
+                vars["main_page"] = "true";
             }
 
             #endregion

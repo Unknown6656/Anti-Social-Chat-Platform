@@ -2,6 +2,12 @@
 
 // I cannot use the ES6-backtick syntax, because of incompatiblity with older browsers -__-
 
+if (!Date.now) {
+    Date.now = function now() {
+        return new Date().getTime();
+    };
+}
+
 $(document).ready(function () {
     $('#noscript').css('display', 'none');
 
@@ -15,7 +21,7 @@ $(document).ready(function () {
     $('#content').css('margin-bottom', ($('#footer').height() + 20) + 'px');
 
     //if (!$.browser.webkit) {
-    //    $('#main').html(`<div class=".warning">§error_webkit§</div>${$('#main').html()}`);
+    //    $('#main').html('<div class=".warning">§error_webkit§</div>' + $('#main').html());
     //}
 
     if (§ssl§/* server-generated */)
@@ -137,15 +143,11 @@ $(document).ready(function () {
         window.location.reload();
     });
 
-    try {
-        var user = §user§;
-
-        if ((user != undefined) && (user != null)) {
-            $('#footer').css('display', 'block');
-            $('#_logout').click(gotomainsite);
-            $('#_userinfo').html('<b>' + user.Name + ' <code>{' + user.UUID + '}</code></b>');
-        }
-    } catch (e) { }
+    if ((user != undefined) && (user != null)) {
+        $('#footer').css('display', 'block');
+        $('#_logout').click(gotomainsite);
+        $('#_userinfo').html('<b>' + user.Name + ' <code>{' + user.UUID + '}</code></b>');
+    }
 
     if ($('#_ecountdown').length > 0) {
         var stop = $('#_error input[type=button]');
@@ -208,8 +210,12 @@ $(document).ready(function () {
 
                     if (ajax("auth_change_pw", 'id=' + response.ID + '&hash=' + response.Hash + '&newhash=' + hash))
                         printreginfo('\
- // TODO \
-');
+<span>\
+    <span style="font-size: 1.7em;">§login_register_ok_title§</span><br/><br/>\
+    §login_register_ok_pretext§ "' + name + '" §login_register_ok_posttext§<br/>\
+    §login_register_ok_guid§:<span class="code">{' + response.UUID + '}</span>\
+    §login_register_ok_salt§:<span class="code">' + response.Salt + '</span>\
+</span>');
                     else
                         throw null;
                 } catch (e) {
@@ -221,8 +227,9 @@ $(document).ready(function () {
     });
 
     upatesession();
-    // TODO : session refresher and auto-logout, if session is invalid
-    // TODO : server down detection
+
+    if (!is_main_page)
+        updatetimeoffs();
 });
 
 function deletecookie(name) {
@@ -230,17 +237,23 @@ function deletecookie(name) {
 }
 
 function printreginfo(resp) {
-    $(document).keyup(esc_msg);
     $('#globalmessage').addClass('open green');
-    $('#globalmessage span').html(resp);
-    inner.addClass('blurred');
+
+    printcommon(resp);
 }
 
 function printerror(msg) {
-    $(document).keyup(esc_msg);
     $('#globalmessage').addClass('open red');
-    $('#globalmessage span').html(msg);
+
+    printcommon('<h2 style="margin: 0; font-size: 32pt;">§error_error§</h2><br/>' + msg);
+}
+
+function printcommon(html) {
+    $('#globalmessage span').html(html);
+
     inner.addClass('blurred');
+
+    $(document).keyup(esc_msg);
 }
 
 function ajax(operation, params) {
@@ -301,12 +314,42 @@ function upatesession() {
     }, 120000);
 }
 
+function updatetimeoffs() {
+    var id = setInterval(function () {
+        try {
+            var time_req = Date.now();
+            var resp = ajax("auth_verify_sesion", "");
+            var time_res = Date.now();
+
+            time_res -= time_req;
+            time_res /= 2;
+            server_offs = resp.TimeStamp.SinceUnix - time_req - time_res;
+
+            if ((user != undefined) && (user != null))
+                if (resp.Success && (resp.Data == true)) {
+
+                }
+                else {
+                    clearInterval(id);
+
+                    $('#globalmessage input[type=button]').click(gotomainsite);
+                    printerror('§error_messages_session§<br/>§error_messages_logout§');
+                }
+        } catch (e) {
+            clearInterval(id);
+
+            $('#globalmessage input[type=button]').click(gotomainsite);
+            printerror('§error_messages_offline§<br/>§error_messages_logout§');
+        }
+    }, 2000);
+}
+
 function esc_lang(e) {
     if (e.keyCode == 27)
         $('#lang_change_bg').click();
 }
 
 function esc_msg(e) {
-    if ((e.keyCode == 27) | (e.keyCode == 13))
+    if ((e.keyCode == 27) /* | (e.keyCode == 13) */)
         $('#globalmessage input[type=button]').click();
 }

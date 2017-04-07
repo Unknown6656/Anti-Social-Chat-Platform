@@ -70,10 +70,17 @@ namespace ASC.Server
         /// </summary>
         public void Stop()
         {
-            if (_listener?.IsListening ?? false)
-                _listener?.Stop();
+            try
+            {
+                if (_listener?.IsListening ?? false)
+                    _listener?.Stop();
 
-            _listener?.Close();
+                _listener?.Close();
+            }
+            finally
+            {
+                Program.acceptconnections = false;
+            }
         }
 
         /// <summary>
@@ -93,7 +100,7 @@ namespace ASC.Server
             }
             catch (Exception ex)
             {
-                ex.Err();
+                (!(ex is ForcedShutdown) ? ex : throw ex).Err();
             }
         });
 
@@ -107,6 +114,7 @@ namespace ASC.Server
 
                 HTTPResponse resp = _rfunc(ctx.Request, ctx.Response);
 
+                ctx.Response.ContentEncoding = HTTPResponse.Codepage;
                 ctx.Response.ContentLength64 = resp.Length;
                 ctx.Response.OutputStream.Write(resp.Bytes ?? new byte[0], 0, resp.Length);
 
@@ -114,7 +122,14 @@ namespace ASC.Server
             }
             catch (Exception ex)
             {
-                ex.Err();
+                if (ex is ForcedShutdown)
+                {
+                    Stop();
+
+                    throw;
+                }
+                else
+                    ex.Err();
             }
             finally
             {
@@ -128,6 +143,8 @@ namespace ASC.Server
     /// </summary>
     public class HTTPResponse
     {
+        public static Encoding Codepage { get; } = Encoding.UTF8; // GetEncoding(1252);
+
         /// <summary>
         /// The response bytes
         /// </summary>
@@ -146,6 +163,6 @@ namespace ASC.Server
         /// Converts the given UTF-16 string to an UTF-8 encoded HTTP-response
         /// </summary>
         /// <param name="text">UTF-16 strings</param>
-        public static implicit operator HTTPResponse(string text) => Encoding.UTF8.GetBytes(text);
+        public static implicit operator HTTPResponse(string text) => Codepage.GetBytes(text);
     }
 }

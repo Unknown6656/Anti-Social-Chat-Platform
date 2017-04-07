@@ -29,6 +29,11 @@
       "needsadmin": "Sie benötigen ein Administratorkonto, um diese Operation auszuführen.",
       "malformatted": "Die Operation oder mindestens ein Parameter ist/sind ungültig.<br/><pre class=\"code\">{0}:\n{1}</pre>",
       "valuerequired": "Es wird ein Wert für &quot;{0}&quot; zur Ausführung der Operation &quot;{1}&quot; benötigt."
+    },
+    "messages": {
+      "session": "Ihre Sitzung ist entweder ungültig oder aufgrund von zu langer Inaktivität abgelaufen.",
+      "offline": "Die Verbindung zum Server wurde verloren.",
+      "logout": "Sie werden aus Sicherheitsgründen abgemeldet."
     }
   },
   "unsafe": "Diese Verbindung ist unverschlüsselt. Bitte verbinden Sie sich mit SSL, um eine sichere Verbindung zu gewährleisten.",
@@ -51,6 +56,7 @@
     "suggest": "Besitzen Sie einen Account?",
     "clickhere": "Klicken Sie hier, um sich einzuloggen.",
     "register": {
+      "description": "Wenn Sie noch kein Benutzerkonto beseitzen, können sie ein neues Konto mit dem folgenden Formular anlegen.",
       "button": "Registrieren",
       "suggest": "Besitzen Sie noch keinen Account?",
       "clickhere": "Klicken Sie hier, um sich zu registrieren.",
@@ -60,7 +66,14 @@
       "missingparams": "Für eine gültige Registrierung werden Benutzername und Passwort benötigt.",
       "pwnonequal": "Beide Passwörter müssen identisch sein.",
       "invalname": "Der Name ist entweder ungültig oder schon in Verwendung.",
-      "fillcaptcha": "Das Captcha muss gelöst werden."
+      "fillcaptcha": "Das Captcha muss gelöst werden.",
+      "ok": {
+        "title": "Glückwunsch!",
+        "pretext": "Sie wurden erfolgreich als",
+        "posttext": "registriert.",
+        "guid": "Ihre GUID ist",
+        "salt": "Ihr salt ist"
+      }
     }
   },
   "search": {

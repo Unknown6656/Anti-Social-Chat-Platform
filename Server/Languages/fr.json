@@ -1,6 +1,6 @@
 ﻿{
   "lang": {
-    "beta": true,
+    "beta": false,
     "name": "Français",
     "iname": "French",
     "code": "fr",
@@ -29,6 +29,11 @@
       "needsadmin": "Un compte d&quot;administrateur est requis pour effectuer cette opération.",
       "malformatted": "Au moins un paramètre a été mal formaté ou l&quot;opération était invalide.<br/><pre class=\"code\">{0}:\n{1}</pre>",
       "valuerequired": "Une valeur pour &quot;{0}&quot; est nécessaire lorsque vous utilisez l&quot;opération &quot;{1}&quot;."
+    },
+    "messages": {
+      "session": "Votre session est invalide ou a expiré en raison de l'inactivité.",
+      "offline": "La connexion au serveur a été perdue.",
+      "logout": "Vous serez déconnecté pour des raisons de sécurité."
     }
   },
   "unsafe": "Votre connexion n&quot;est pas sécurisée. Envisager de se connecter à ce site via SSL.",
@@ -51,6 +56,7 @@
     "suggest": "Vous avez un compte?",
     "clickhere": "Cliquez ici pour vous identifier.",
     "register": {
+      "description": "Si vous ne possédez pas encore de compte, vous pouvez l&quot;enregistrer en utilisant le formulaire ci-dessous.",
       "button": "Registrer",
       "suggest": "Vous n&quot;avez pas de compte?",
       "clickhere": "Cliquez ici pour vous inscrire.",
@@ -60,7 +66,14 @@
       "missingparams": "Le nom d&quot;utilisateur et le mot de passe sont nécessaires pour une inscription.",
       "pwnonequal": "Les deux mots de passe donnés doivent être égaux.",
       "invalname": "Le nom n&quot;est pas valide ou déjà utilisé.",
-      "fillcaptcha": "Le Captcha doit être résolu."
+      "fillcaptcha": "Le Captcha doit être résolu.",
+      "ok": {
+        "title": "Félicitations!",
+        "pretext": "Vous avez été enregistré avec succès sous le nom",
+        "posttext": ".",
+        "guid": "Votre GUID est",
+        "salt": "Votre salt est"
+      }
     }
   },
   "search": {

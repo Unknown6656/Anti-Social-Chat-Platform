@@ -190,6 +190,9 @@
     <Content Include="Languages\fr.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Languages\ru.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <EmbeddedResource Include="Unknown6656.cer">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

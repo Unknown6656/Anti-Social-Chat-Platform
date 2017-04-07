@@ -273,21 +273,21 @@ namespace ASC.Server
         }
 
         /// <summary>
-        /// 
+        /// Verifies the given session string and returns whether the given session is valid
         /// </summary>
-        /// <param name="session"></param>
-        /// <returns></returns>
+        /// <param name="session">Session string</param>
+        /// <returns>Verification result</returns>
         public bool VerifySession(string session) => ValidateHash(session) ? Execute($@"SELECT 1
                                                                                         FROM {UAUTH}
                                                                                         WHERE UPPER([Session]) = '{session.ToUpper()}'
                                                                                         AND [LastLogin] > CONVERT(DATETIME, '{DateTime.Now.AddMinutes(-5):yyyy-MM-ddTHH:mm:ss.fff}', 126)").Any() : false;
 
         /// <summary>
-        /// 
+        /// Verifies whether the given user credentials are correct
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="hash"></param>
-        /// <returns></returns>
+        /// <param name="id">User ID</param>
+        /// <param name="hash">User (salted) password hash</param>
+        /// <returns>Verification result</returns>
         public bool VerifyUser(long id, string hash) => ValidateHash(hash) ? Execute(GetScript(nameof(VerifyUser), id, hash.ToUpper())).Any() : false;
 
         /// <summary>
@@ -313,6 +313,13 @@ namespace ASC.Server
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ip"></param>
+        /// <param name="useragent"></param>
+        /// <param name="session"></param>
         public void AutoLogin(long id, string ip, string useragent, out string session)
         {
             session = Authentification.GenerateSaltString();
@@ -323,10 +330,10 @@ namespace ASC.Server
         }
 
         /// <summary>
-        /// 
+        /// Returns the user salt associated with the given ID
         /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
+        /// <param name="id">User ID</param>
+        /// <returns>User salt</returns>
         public string GetUserSalt(long id) => Execute($"SELECT [Salt] FROM {UAUTH} WHERE [ID] = {id}").First()[0] as string;
 
         /// <summary>

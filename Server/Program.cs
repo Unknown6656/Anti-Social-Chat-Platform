@@ -47,7 +47,7 @@ namespace ASC.Server
                                                            [2001:4860:4860::8844]".Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(_ => _.Trim()).ToArray();
 
         internal static string recaptcha_private = null;
-        private static bool accptconnections = false;
+        internal static bool acceptconnections = false;
         private static Database database;
 
 
@@ -99,8 +99,6 @@ namespace ASC.Server
 
                     throw null;
                 }
-            },
-            args => {
             },
         };
 
@@ -268,13 +266,17 @@ namespace ASC.Server
                         else
                             Parallel.ForEach(Tasks, _ => _(args));
 
-                        fixed (bool* bptr = &accptconnections)
+                        fixed (bool* bptr = &acceptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
                             using (ASCServer ws = new ASCServer(Win32.PORT, bptr, null))
                                 new Program().Inner(Win32.PORT, dir, ws);
                     }
                     else
                         "Cannot start the server, as an other instance of this application is already running.".Warn();
+                }
+                catch (ForcedShutdown)
+                {
+                    "Remote-forced (controlled) shutdown ...".Warn();
                 }
                 catch (Exception ex)
                 {
@@ -380,14 +382,14 @@ namespace ASC.Server
 
                     $"Runninng on port {port}. Press `ESC` to exit.".Info();
 
-                    accptconnections = true;
+                    acceptconnections = true;
 
                     do
-                        while (!Console.KeyAvailable)
+                        while (!Console.KeyAvailable && acceptconnections)
                             ;
-                    while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                    while (acceptconnections && (Console.ReadKey(true).Key != ConsoleKey.Escape));
 
-                    accptconnections = false;
+                    acceptconnections = false;
 
                     "User-forced shutdown ...".Warn();
 
@@ -397,7 +399,7 @@ namespace ASC.Server
                 {
                     #region CLEANUP
 
-                    accptconnections = false;
+                    acceptconnections = false;
 
                     Authentification.Stop();
 
@@ -627,5 +629,10 @@ namespace ASC.Server
 
             File.WriteAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
         }
+    }
+
+    internal sealed class ForcedShutdown
+        : Exception
+    {
     }
 }
