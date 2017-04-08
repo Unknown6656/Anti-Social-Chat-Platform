@@ -307,6 +307,8 @@ namespace ASC.Server
 
                     "Logging service shutting down.".Info();
 
+                    Logger.Flush();
+
                     if (!containsarg(args, ARG_NOLOG))
                         Logger.Save(Directory.GetCurrentDirectory());
 
@@ -405,7 +407,13 @@ namespace ASC.Server
 
                     lock (ASCServer.TemporaryUsers)
                         foreach (long id in ASCServer.TemporaryUsers.Keys)
+                        {
+                            DBUser user = ASCServer.TemporaryUsers[id];
+
                             database?.DeleteUser(id);
+
+                            $"Temporary user {{{user.UUID}}} ({user.Name}) deleted.".Ok();
+                        }
 
                     "Disconnicting from the database ...".Msg();
 

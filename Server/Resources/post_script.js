@@ -20,6 +20,9 @@ $(document).ready(function () {
     $('#content').css('top', ($('#header').height() + 20) + 'px');
     $('#content').css('margin-bottom', ($('#footer').height() + 20) + 'px');
 
+    if (is_main_page)
+        $('#content').css('max-width', '1100px');
+
     //if (!$.browser.webkit) {
     //    $('#main').html('<div class=".warning">§error_webkit§</div>' + $('#main').html());
     //}
@@ -115,6 +118,7 @@ $(document).ready(function () {
         } catch (e) { }
 
         $('#lang_change_bg, #lang_change_form').css('display', 'none');
+
         inner.removeClass('blurred');
     });
     $('#globalmessage input[type=button]').click(function () {
@@ -123,6 +127,8 @@ $(document).ready(function () {
         } catch (e) { }
 
         $('#globalmessage').removeClass('open').removeClass('red').removeClass('green');
+        $('#globalmessage').css('top', '-' + $('#globalmessage').height() + 'px');
+
         inner.removeClass('blurred');
     });
 
@@ -211,7 +217,7 @@ $(document).ready(function () {
                     if (ajax("auth_change_pw", 'id=' + response.ID + '&hash=' + response.Hash + '&newhash=' + hash))
                         printreginfo('\
 <span>\
-    <span style="font-size: 1.7em;">§login_register_ok_title§</span><br/><br/>\
+    <span style="font-size: 1.7em;">§login_register_ok_title§</span>\
     §login_register_ok_pretext§ "' + name + '" §login_register_ok_posttext§<br/>\
     §login_register_ok_guid§:<span class="code">{' + response.UUID + '}</span>\
     §login_register_ok_salt§:<span class="code">' + response.Salt + '</span>\
@@ -237,19 +243,20 @@ function deletecookie(name) {
 }
 
 function printreginfo(resp) {
-    $('#globalmessage').addClass('open green');
-
-    printcommon(resp);
+    printcommon(resp, 'green');
 }
 
 function printerror(msg) {
-    $('#globalmessage').addClass('open red');
-
-    printcommon('<h2 style="margin: 0; font-size: 32pt;">§error_error§</h2><br/>' + msg);
+    printcommon('<h2 style="margin: 0; font-size: 32pt;">§error_error§</h2><br/>' + msg, 'red');
 }
 
-function printcommon(html) {
+function printcommon(html, style) {
+    $('#globalmessage').css('top', '10%');
+    $('#globalmessage').addClass('open ' + style);
     $('#globalmessage span').html(html);
+    $('html, body').animate({
+        scrollTop: 0
+    }, 500);
 
     inner.addClass('blurred');
 

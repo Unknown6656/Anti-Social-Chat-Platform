@@ -31,7 +31,7 @@
       "valuerequired": "Une valeur pour &quot;{0}&quot; est nécessaire lorsque vous utilisez l&quot;opération &quot;{1}&quot;."
     },
     "messages": {
-      "session": "Votre session est invalide ou a expiré en raison de l'inactivité.",
+      "session": "Votre session est invalide ou a expiré en raison de l&quot;inactivité.",
       "offline": "La connexion au serveur a été perdue.",
       "logout": "Vous serez déconnecté pour des raisons de sécurité."
     }
