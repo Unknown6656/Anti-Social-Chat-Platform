@@ -275,7 +275,7 @@ a, input, button, body, #main {
     z-index: 1010;
     display: none;
     height: 300px;
-    top: 200px;
+    top: 10%;
 }
 
 #lang_change_form > span {

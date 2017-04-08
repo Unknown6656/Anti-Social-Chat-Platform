@@ -143,7 +143,7 @@ namespace ASC.Server
     /// </summary>
     public class HTTPResponse
     {
-        public static Encoding Codepage { get; } = Encoding.UTF8; // GetEncoding(1252);
+        public static Encoding Codepage { get; } = Encoding.UTF8; // Unicode or UTF8 or GetEncoding(1252) ?
 
         /// <summary>
         /// The response bytes
@@ -153,6 +153,10 @@ namespace ASC.Server
         /// Returns the response's length (in bytes)
         /// </summary>
         public int Length => Bytes?.Length ?? 0;
+        /// <summary>
+        /// Returns the response's textual representation
+        /// </summary>
+        public string Text => Codepage.GetString(Bytes);
 
         /// <summary>
         /// Converts the given byte array to an HTTP-response

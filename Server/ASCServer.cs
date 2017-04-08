@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using System.Net.Sockets;
 using System.Diagnostics;
 using System.Reflection;
 using System.Drawing;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Net;
@@ -19,7 +21,6 @@ using Newtonsoft.Json;
 using Resources = ASC.Server.Properties.Resources;
 
 using static ASC.Server.StatusCode;
-using System.Runtime.CompilerServices;
 
 namespace ASC.Server
 {
@@ -385,7 +386,7 @@ namespace ASC.Server
             string session = null;
             DBUser user;
 
-            SetStatusCode(response, StatusCode._200);
+            SetStatusCode(response, _200);
 
             if (contains(request, "lang", out string lang))
                 lang = lang?.ToLower();
@@ -415,7 +416,7 @@ namespace ASC.Server
             vars["lang_avail"] = string.Join(", ", from lp in LanguagePacks.Keys select $"\"{lp}\"");
             vars["mobile"] = ToJSbool(mobile);
             vars["url"] = url;
-            vars["ssl"] = ToJSbool(SSL(port)); 
+            vars["ssl"] = ToJSbool(SSL(port));
             vars["time"] = now;
             vars["port"] = port;
             vars["port_http"] = Ports.HTTP;
@@ -635,7 +636,58 @@ namespace ASC.Server
 
         internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
 
-        internal static HTTPResponse ToJSON<T>(T obj) => JsonConvert.SerializeObject(obj);
+        internal static HTTPResponse ToJSON<T>(T obj)
+        {
+            return JsonConvert.SerializeObject(convert(obj));
+
+            dynamic convert(dynamic o)
+            {
+                if (o is null)
+                    return null;
+
+                Type t = o.GetType();
+
+                if (isanonymous(t))
+                {
+                    Dictionary<string, dynamic> copy = new Dictionary<string, dynamic>();
+                    ConstructorInfo ctor = t.GetConstructors().Single();
+
+                    foreach (PropertyInfo prop in t.GetRuntimeProperties())
+                    {
+                        object pval = prop.GetValue(o);
+
+                        copy[prop.Name] = pval is string s ? ConvertEncoding(s, Encoding.Unicode, HTTPResponse.Codepage) : convert(pval);
+                    }
+
+                    dynamic[] @params = ctor.GetParameters().Select(p => copy[p.Name]).ToArray();
+
+                    return ctor.Invoke(@params);
+                }
+                else
+                    return o;
+            }
+
+            bool isanonymous(Type type) => Attribute.IsDefined(type, typeof(CompilerGeneratedAttribute), false)
+                                        && type.IsGenericType
+                                        && type.Name.Contains("AnonymousType")
+                                        && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))
+                                        && type.Attributes.HasFlag(TypeAttributes.NotPublic);
+        }
+
+        /// <summary>
+        /// Converts the given string from the source to the destination encoding
+        /// </summary>
+        /// <param name="text">Input text</param>
+        /// <param name="src">Source Encoding</param>
+        /// <param name="dst">Destination Encoding</param>
+        /// <returns>Converted text</returns>
+        public static string ConvertEncoding(string text, Encoding src, Encoding dst)
+        {
+            byte[] dat = src.GetBytes(text);
+            byte[] res = Encoding.Convert(src, dst, dat);
+
+            return dst.GetString(res);
+        }
     }
 
     /// <summary>
