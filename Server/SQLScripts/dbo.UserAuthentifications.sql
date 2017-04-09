@@ -6,5 +6,6 @@
     [LastIP]        VARCHAR(50)     NULL,
     [LastLogin]     DATETIME        NULL,
     [LastUserAgent] VARCHAR(MAX)    NULL,
+    [LastLocation]  VARCHAR(256)	NULL,
     PRIMARY KEY CLUSTERED ([ID] ASC)
 );

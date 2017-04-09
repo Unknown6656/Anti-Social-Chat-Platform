@@ -44,14 +44,15 @@ namespace ASC.Server
                                                            microsoft.com,
                                                            apple.com,
                                                            [2001:4860:4860::8888],
-                                                           [2001:4860:4860::8844]".Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(_ => _.Trim()).ToArray();
+                                                           [2001:4860:4860::8844],
+                                                           [2620:0:862:ed1a::1]".Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(_ => _.Trim()).ToArray();
 
         internal static string recaptcha_private = null;
         internal static bool acceptconnections = false;
         private static Database database;
 
 
-        internal static Action<string[]>[] Tasks { get; } = new Action<string[]>[] {
+        internal static Action<string[]>[] StartupTasks { get; } = new Action<string[]>[] {
             args => {
                 if (File.Exists(Win32.RECAPTCHA_SECRET) && ((recaptcha_private = File.ReadAllText(Win32.RECAPTCHA_SECRET)?.Trim() ?? recaptcha_private ?? "").Length > 0))
                     $"Loaded the ReCaptcha private key '{recaptcha_private}'".Ok();
@@ -261,10 +262,10 @@ namespace ASC.Server
                     if (m.WaitOne(0, false) || containsarg(args, ARG_IGNMTX))
                     {
                         if (containsarg(args, ARG_SLOWSTART))
-                            foreach (Action<string[]> task in Tasks)
+                            foreach (Action<string[]> task in StartupTasks)
                                 task(args);
                         else
-                            Parallel.ForEach(Tasks, _ => _(args));
+                            Parallel.ForEach(StartupTasks, _ => _(args));
 
                         fixed (bool* bptr = &acceptconnections)
                             using (ServiceHost sh = BindCertificatePort(IPAddress.Any.ToString(), Win32.PORT, StoreName.TrustedPublisher, nameof(Properties.Resources.ASC)))
@@ -410,9 +411,12 @@ namespace ASC.Server
                         {
                             DBUser user = ASCServer.TemporaryUsers[id];
 
-                            database?.DeleteUser(id);
+                            if (database?.HasUser(id) ?? false)
+                            {
+                                database?.DeleteUser(id);
 
-                            $"Temporary user {{{user.UUID}}} ({user.Name}) deleted.".Ok();
+                                $"Temporary user {{{user.UUID}}} ({user.Name}) deleted.".Ok();
+                            }
                         }
 
                     "Disconnicting from the database ...".Msg();

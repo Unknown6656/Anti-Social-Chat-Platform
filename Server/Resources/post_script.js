@@ -232,8 +232,6 @@ $(document).ready(function () {
         return false;
     });
 
-    upatesession();
-
     if (!is_main_page)
         updatetimeoffs();
 });
@@ -264,8 +262,6 @@ function printcommon(html, style) {
 }
 
 function ajax(operation, params) {
-    clearInterval(ival_sess);
-
     var uri = api_uri + '&session=' + session + '&operation=' + operation + '&' + params;
     var result;
 
@@ -284,8 +280,6 @@ function ajax(operation, params) {
             $.cookie('_sess', session = result.Session);
     } catch (e) {
     }
-
-    upatesession();
 
     return result;
 }
@@ -313,19 +307,11 @@ function gotomainsite() {
     window.location.href = base_uri;
 }
 
-function upatesession() {
-    clearInterval(ival_sess);
-
-    ival_sess = setInterval(function () {
-        ajax('auth_refr_session', null);
-    }, 120000);
-}
-
 function updatetimeoffs() {
     var id = setInterval(function () {
         try {
             var time_req = Date.now();
-            var resp = ajax("auth_verify_sesion", "");
+            var resp = ajax("auth_refr_session", "");
             var time_res = Date.now();
 
             time_res -= time_req;
@@ -333,9 +319,8 @@ function updatetimeoffs() {
             server_offs = resp.TimeStamp.SinceUnix - time_req - time_res;
 
             if ((user != undefined) && (user != null))
-                if (resp.Success && (resp.Data == true)) {
-
-                }
+                if (resp.Success && (resp.Data != undefined))
+                    $.cookie('_sess', session = resp.Session);
                 else {
                     clearInterval(id);
 

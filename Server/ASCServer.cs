@@ -123,7 +123,7 @@ namespace ASC.Server
                             // ["remoteip"] = vars["user_addr"],
                         })));
 
-                    if ((result?.success ?? false) /* && (result.hostname.ToLower() != req.UserHostName.ToLower()) */)
+                    if (result?.success ?? false /* && (result.hostname.ToLower() != req.UserHostName.ToLower()) */)
                     {
                         DBUser user = new DBUser
                         {
@@ -151,10 +151,10 @@ namespace ASC.Server
                 ["auth_change_pw"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["newhash"]), ASCOperationPrivilege.User, "newhash"),
                 ["auth_login"] = new ASCOperation((req, res, vals, db) => new
                 {
-                    Success = verify(req, db, vals["id"], vals["hash"], out string session),
+                    Success = verify(req, db, vals["id"], vals["hash"], vals["location"], out string session),
                     Session = session ?? ""
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
-                ["auth_refr_session"] = new ASCOperation((req, res, vals, db) => new { }, ASCOperationPrivilege.User),
+                ["auth_refr_session"] = new ASCOperation((req, res, vals, db) => Unit, ASCOperationPrivilege.User, keys: "session"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), keys: "new"),
                 ["delete_tmp"] = new ASCOperation((req, res, vals, db) => {
                     long id = long.Parse(vals["id"]);
@@ -300,12 +300,18 @@ namespace ASC.Server
             };
             int port = request.LocalEndPoint.Port;
             string url = request.RawUrl;
-            DateTime now = DateTime.Now;
+            Task<GeoIPResult> tloc = new Task<GeoIPResult>(() => GetLocation(request.UserHostAddress));
+            var json_timestamp = new
+            {
+                Raw = dt_req,
+                SinceUnix = new DateTimeOffset(dt_req).ToUnixTimeMilliseconds(),
+            };
 
             response.Headers[HttpResponseHeader.Server] = ServerString;
 
             Stopwatch sw = new Stopwatch();
 
+            tloc.Start();
             sw.Start();
 
             while (!*acceptconnections)
@@ -417,7 +423,7 @@ namespace ASC.Server
             vars["mobile"] = ToJSbool(mobile);
             vars["url"] = url;
             vars["ssl"] = ToJSbool(SSL(port));
-            vars["time"] = now;
+            vars["time"] = dt_req;
             vars["port"] = port;
             vars["port_http"] = Ports.HTTP;
             vars["port_https"] = Ports.HTTPS;
@@ -428,6 +434,12 @@ namespace ASC.Server
             vars["user_host"] = request.UserHostName;
             vars["user_addr"] = request.UserHostAddress;
             vars["main_page"] = "false";
+
+            tloc.Wait();
+
+            GeoIPResult location = tloc.Result;
+
+            vars["location"] = location == null ? "" : $"{location.postal} - {location.city},\n{location.state},\n{location.country_code} - {location.country_name}\n({location.latitude}, {location.longitude})";
 
             #endregion
             #region OPERATION REQUEST
@@ -455,6 +467,10 @@ namespace ASC.Server
                     if (missing.Any())
                         return error("error_api_valuerequired", _400, missing.First(), op);
 
+                    foreach (string key in vars.Keys)
+                        if (!values.ContainsKey(key))
+                            values[key] = vars[key].ToString();
+
                     try
                     {
                         if (ascop.Privilege > ASCOperationPrivilege.Regular)
@@ -465,7 +481,7 @@ namespace ASC.Server
                             session = null;
 
                             if (contains(request, "hash", out string hash))
-                                res &= verify(request, tSQL, sid, hash, out session);
+                                res &= verify(request, tSQL, sid, hash, values["location"], out session);
 
                             if (session == null)
                                 if (contains(request, "session", out session))
@@ -476,7 +492,7 @@ namespace ASC.Server
                                     {
                                         DBUser temp = tSQL.GetUserBySession(session);
 
-                                        tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, out session);
+                                        tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, values["location"], out session);
 
                                         user = temp; // copy after login due to possible failure
                                     }
@@ -499,10 +515,7 @@ namespace ASC.Server
                             Success = true,
                             Session = session,
                             Data = ascop.Handler(request, response, values, tSQL),
-                            TimeStamp = new {
-                                Raw = dt_req,
-                                SinceUnix = new DateTimeOffset(dt_req).ToUnixTimeMilliseconds(),
-                            },
+                            TimeStamp = json_timestamp,
                         });
                     }
                     catch (ForcedShutdown)
@@ -523,7 +536,7 @@ namespace ASC.Server
             {
                 DBUserAuthentification auth = tSQL.GetAuth(user.ID);
 
-                tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, out session); // update login
+                tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, vars["location"].ToString(), out session); // update login
 
                 auth.Session = session;
 
@@ -572,7 +585,8 @@ namespace ASC.Server
                 {
                     Success = false,
                     Session = session,
-                    Data = (args ?? new object[0]).Length > 0 ? string.Format(vars[msg].ToString(), args) : vars[msg]
+                    Data = (args ?? new object[0]).Length > 0 ? string.Format(vars[msg].ToString(), args) : vars[msg],
+                    TimeStamp = json_timestamp,
                 });
             }
             DBUser getsessionuser()
@@ -622,11 +636,11 @@ namespace ASC.Server
             return ret;
         }
 
-        internal static bool verify(HttpListenerRequest req, Database db, string id, string hash, out string session)
+        internal static bool verify(HttpListenerRequest req, Database db, string id, string hash, string loc, out string session)
         {
             session = null;
 
-            bool res = long.TryParse(id, out long l) && db.Login(l, hash, req.RemoteEndPoint.ToString(), req.UserAgent, out session);
+            bool res = long.TryParse(id, out long l) && db.Login(l, hash, req.RemoteEndPoint.ToString(), req.UserAgent, loc, out session);
 
             if (res && TemporaryUsers.ContainsKey(l))
                 TemporaryUsers.Remove(l);
@@ -688,6 +702,30 @@ namespace ASC.Server
 
             return dst.GetString(res);
         }
+
+        internal static GeoIPResult GetLocation(string ip)
+        {
+            if (regex(ip, @"^(?<ip>[0-9\.]+)(\:[0-9]+)?$", out Match m) ||
+                regex(ip, @"^\[(?<ip>[\:0-9a-f]+)\](\:[0-9]+)?$", out m))
+                ip = m.Groups[nameof(ip)].ToString();
+
+            string res;
+
+            using (WebClient wc = new WebClient())
+                try
+                {
+                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{ip.ToUpper()}");
+                }
+                catch
+                {
+                    return null;
+                }
+
+            if (regex(res, @"^callback\s*\((?<content>.+)\)", out m))
+                    res = m.Groups["content"].ToString();
+
+            return JsonConvert.DeserializeObject<GeoIPResult>(res);
+        }
     }
 
     /// <summary>
@@ -742,11 +780,23 @@ namespace ASC.Server
         Administrator = 2
     }
 
-    internal class ReCaptchaResult
+    internal sealed class ReCaptchaResult
     {
         public bool success { set; get; }
         public string challenge_ts { set; get; }
         public string hostname { set; get; }
+    }
+
+    internal sealed class GeoIPResult
+    {
+        public string country_code { set; get; }
+        public string country_name { set; get; }
+        public string city { set; get; }
+        public string postal { set; get; }
+        public decimal latitude { set; get; }
+        public decimal longitude { set; get; }
+        public string IPv4 { set; get; }
+        public string state { set; get; }
     }
 
     internal enum StatusCode

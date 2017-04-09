@@ -138,10 +138,12 @@ namespace ASC.Server
                                 [LastIP],
                                 [LastLogin],
                                 [LastUserAgent]
+                                [LastLocation]
                             ) VALUES (
                                 {user.ID},
                                 '',
                                 '{auth.Salt}',
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -280,7 +282,7 @@ namespace ASC.Server
         public bool VerifySession(string session) => ValidateHash(session) ? Execute($@"SELECT 1
                                                                                         FROM {UAUTH}
                                                                                         WHERE UPPER([Session]) = '{session.ToUpper()}'
-                                                                                        AND [LastLogin] > CONVERT(DATETIME, '{DateTime.Now.AddMinutes(-5):yyyy-MM-ddTHH:mm:ss.fff}', 126)").Any() : false;
+                                                                                        AND [LastLogin] > {GetSQLString(DateTime.Now.AddMinutes(-5))}").Any() : false;
 
         /// <summary>
         /// Verifies whether the given user credentials are correct
@@ -297,13 +299,14 @@ namespace ASC.Server
         /// <param name="hash"></param>
         /// <param name="ip"></param>
         /// <param name="useragent"></param>
+        /// <param name="location"></param>
         /// <param name="session"></param>
         /// <returns></returns>
-        public bool Login(long id, string hash, string ip, string useragent, out string session)
+        public bool Login(long id, string hash, string ip, string useragent, string location, out string session)
         {
             if (VerifyUser(id, hash))
             {
-                AutoLogin(id, ip, useragent, out session);
+                AutoLogin(id, ip, useragent, location, out session);
 
                 return true;
             }
@@ -319,12 +322,13 @@ namespace ASC.Server
         /// <param name="id"></param>
         /// <param name="ip"></param>
         /// <param name="useragent"></param>
+        /// <param name="location"></param>
         /// <param name="session"></param>
-        public void AutoLogin(long id, string ip, string useragent, out string session)
+        public void AutoLogin(long id, string ip, string useragent, string location, out string session)
         {
             session = Authentification.GenerateSaltString();
 
-            ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id));
+            ExecuteVoid(GetScript(nameof(Login), SQLEncode(useragent), ip, session, id, SQLEncode(location)));
 
             $"User 0x{id:x16} successfully logged in.".Msg();
         }
@@ -353,6 +357,7 @@ namespace ASC.Server
         internal DBUserAuthentification DecodeUAuth(DBUserAuthentification auth)
         {
             auth.LastUserAgent = SQLDecode(auth.LastUserAgent);
+            auth.LastLocation = SQLDecode(auth.LastLocation);
 
             return auth;
         }
@@ -365,6 +370,7 @@ namespace ASC.Server
         internal DBMessage DecodeMSG(DBMessage msg)
         {
             msg.Content = SQLDecode(msg.Content);
+            msg.SenderUA = SQLDecode(msg.SenderUA);
             msg.SenderLocation = SQLDecode(msg.SenderLocation);
 
             return msg;
@@ -373,10 +379,53 @@ namespace ASC.Server
         internal DBMessage EncodeMSG(DBMessage msg)
         {
             msg.Content = SQLEncode(msg.Content);
+            msg.SenderUA = SQLEncode(msg.SenderUA);
             msg.SenderLocation = SQLEncode(msg.SenderLocation);
 
             return msg;
         }
+
+        public void SendMessage(long id, bool secured, string ip, string ua, string loc, string cont)
+        {
+            long msgid = NextID(MESSG);
+
+            while (HasMessage(msgid))
+                ++msgid;
+
+            ExecuteVoid($@"INSERT INTO {DB}.{MESSG} (
+                                [ID],
+                                [SenderID],
+                                [SendDate],
+                                [IsSecured],
+                                [IsDelivered],
+                                [IsRead],
+                                [ReadDate],
+                                [SenderIP],
+                                [SenderUA],
+                                [SenderLocation],
+                                [Content]
+                            ) VALUES (
+                                {msgid},
+                                {id},
+                                getdate(),
+                                {(secured ? 1 : 0)},
+                                0,
+                                0,
+                                {GetSQLString(DateTime.MinValue)},
+                                '{SQLEncode(ua ?? "")}',
+                                '{SQLEncode(loc ?? "")}',
+                                '{SQLEncode(cont ?? "")}'
+                            )");
+
+            // TODO
+        }
+
+        /// <summary>
+        /// Returns whether the message associated with the given message ID exists
+        /// </summary>
+        /// <param name="id">Message ID</param>
+        /// <returns>Existance</returns>
+        public bool HasMessage(long id) => Execute($"SELECT COUNT(0) AS [ID] FROM {MESSG} WHERE [ID] = {id}").FirstOrDefault(_ => (long)_["ID"] == 1) > 0;
 
         #endregion
         #region GENERAL
@@ -405,12 +454,7 @@ namespace ASC.Server
         /// </summary>
         /// <param name="tablename">Table name</param>
         /// <returns>Existence information</returns>
-        public bool Exists(string tablename)
-        {
-            int res = (int)Execute(GetScript("CheckExistence", tablename)).First()[0];
-
-            return res != 0;
-        }
+        public bool Exists(string tablename) => (int)Execute(GetScript("CheckExistence", tablename)).First()[0] != 0;
 
         /// <summary>
         /// Clears the internal database and deletes all tables
@@ -451,6 +495,8 @@ namespace ASC.Server
 
             return res;
         }
+
+        internal static string GetSQLString(DateTime date) => $"CONVERT(DATETIME, '{date:yyyy-MM-ddTHH:mm:ss.fff}', 126)";
 
         #endregion
         #region CLASSES
@@ -833,7 +879,7 @@ namespace ASC.Server
         /// <summary>
         /// The message's timestamp
         /// </summary>
-        public DateTime Date { get; set; }
+        public DateTime SendDate { get; set; }
         /// <summary>
         /// Determines, whether the message is secured
         /// </summary>
@@ -847,9 +893,17 @@ namespace ASC.Server
         /// </summary>
         public bool IsRead { get; set; }
         /// <summary>
+        /// The timestamp, on which the message has been read  [System::DateTime::MinValue represents an unread message]
+        /// </summary>
+        public DateTime ReadDate { get; set; }
+        /// <summary>
         /// The message's sender IP
         /// </summary>
         public string SenderIP { get; set; }
+        /// <summary>
+        /// The message's sender user agent string
+        /// </summary>
+        public string SenderUA { get; set; }
         /// <summary>
         /// The message's sender location
         /// </summary>
@@ -895,5 +949,9 @@ namespace ASC.Server
         /// The user's last login user agent
         /// </summary>
         public string LastUserAgent { get; set; }
+        /// <summary>
+        /// The user's last estimated location
+        /// </summary>
+        public string LastLocation { get; set; }
     }
 }

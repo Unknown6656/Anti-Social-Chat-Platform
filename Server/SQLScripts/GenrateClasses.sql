@@ -1,4 +1,4 @@
-﻿DECLARE @TableName SYSNAME = /*table name*/ 'UserAuthentifications'
+﻿DECLARE @TableName SYSNAME = /*table name*/ 'Messages'
 DECLARE @Result VARCHAR(MAX) = '[Serializable]
 public sealed class DB' + @TableName + '
 {'
