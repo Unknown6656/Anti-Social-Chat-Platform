@@ -259,8 +259,8 @@ namespace ASC.Server
             using (Mutex m = new Mutex(false, Win32.MUTEX))
                 try
                 {
-                    Console.CancelKeyPress += delegate { throw new ForcedShutdown(); };
-                    AppDomain.CurrentDomain.ProcessExit += delegate { throw new ForcedShutdown(); };
+                    Console.CancelKeyPress += Console_CancelKeyPress;
+                    AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
                     if (m.WaitOne(0, false) || containsarg(args, ARG_IGNMTX))
                     {
@@ -293,6 +293,9 @@ namespace ASC.Server
                 }
                 finally
                 {
+                    Console.CancelKeyPress -= Console_CancelKeyPress;
+                    AppDomain.CurrentDomain.ProcessExit -= CurrentDomain_ProcessExit;
+
                     if (containsarg(args, ARG_DELFWL))
                     {
                         "Removing previously set firewall rules ...".Msg();
@@ -325,6 +328,16 @@ namespace ASC.Server
                 }
 
             return retcode;
+        }
+
+        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            throw new ForcedShutdown();
+        }
+
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            throw new ForcedShutdown();
         }
 
         [OperationContract]
