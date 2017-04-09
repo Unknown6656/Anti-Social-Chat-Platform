@@ -94,16 +94,25 @@ $(document).ready(function () {
 
         ajax('user_by_name', 'name=' + query).Data.forEach(function (item) {
             var user = item.Item1;
+            var uuid = '{' + user.UUID.toUpperCase() + '}'
 
             listview.html(listview.html() + '\
 <div class="' + (user.IsAdmin ? 'admin ' : ' ') + (user.IsBlocked ? 'locked' : '') + '">\
     <div>\
         <b>' + user.Name + (user.IsAdmin ? ' [§search_admin§]' : '') + (user.IsBlocked ? ' [§search_locked§]' : '') + '</b> &#160;\
-        <i class="code">{' + user.UUID.toUpperCase() + '}</i><br/>\
+        <i class="code">' + uuid + '</i><br/>\
         §search_membersince§:\
         <span class="code">' + user.MemberSince + '</span>\
+        <input value="§search_login§" type="button" data-guid="' + uuid + '"/>\
     </div>\
 </div>');
+            $('#_guids input[type=button]').click(function () {
+                $('#_login #_guid').val($(this).attr('data-guid'));
+                $('#_login #_password').focus();
+                $('html, body').animate({
+                    scrollTop: 0
+                }, 500);
+            });
         });
     });
     $('#flag').click(function () {
@@ -235,6 +244,26 @@ $(document).ready(function () {
     if (!is_main_page)
         updatetimeoffs();
 });
+
+function notify(content) {
+    if (!("Notification" in window))
+        printerror("§error_notification§");
+    else if (Notification.permission === "granted")
+        innernotify(content);
+    else if (Notification.permission !== "denied")
+        Notification.requestPermission(function (permission) {
+            if (permission === "granted")
+                innernotify(content);
+        });
+}
+
+function innernotify(content) {
+    var notification = new Notification(content);
+
+    // TODO
+
+    return notification;
+}
 
 function deletecookie(name) {
     $.cookie(name, null, { path: '/' });

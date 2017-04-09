@@ -241,6 +241,7 @@ a, input, button, body, #main {
 #main {
     padding: 10px 10px 10px 10px;
     width: calc(100% - 26px);
+    min-width: 800px;
 }
 
 #lang_change_bg {

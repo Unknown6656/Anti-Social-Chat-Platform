@@ -12,6 +12,7 @@
   "error": {
     "noscript": "Vous devez activer Javascript pour utiliser ce site correctement.",
     "webkit": "Vous devez utiliser un navigateur basé sur webkit pour profiter de toutes les fonctionnalités de la page.",
+    "notification": "Votre navigateur ne prend pas en charge les notifications. Envisagez de passer à une version plus récente ou à un navigateur différent.",
     "error": "Erreur",
     "500": "Service actuellement indisponible",
     "400": "Opération invalide",
@@ -81,7 +82,8 @@
     "forgot": "Vous avez oublié votre GUID?<br/>Vous pouvez rechercher ici votre GUID en utilisant votre nom visible:",
     "membersince": "Membre depuise",
     "admin": "Administrateur",
-    "locked": "Bloqué"
+    "locked": "Bloqué",
+    "login": "Login with this GUID"
   },
   "global": {
     "title": "Plate-forme de chat anti-social",

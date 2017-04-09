@@ -354,6 +354,33 @@ namespace ASC.Server
         /// <returns></returns>
         public DBUser GetUserBySession(string session) => Execute<DBUser>(GetScript(nameof(GetUserBySession), session)).FirstOrDefault();
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public (UserOnlineState, TimeSpan?) GetUserOnlineState(long id)
+        {
+            IEnumerable<dynamic> dt = Execute($"SELECT TOP(1) [LastLogin], getdate() as Now FROM {UAUTH} WHERE [ID] = {id}");
+
+            if (dt.Any())
+            {
+                UserOnlineState state = UserOnlineState.Offline;
+                DateTime tlog = dt.First()["LastLogin"];
+                DateTime tnow = dt.First()["Now"];
+                TimeSpan diff = tnow - tlog;
+
+                if (diff.TotalSeconds <= 30)
+                    state = UserOnlineState.Active;
+                else if (diff.TotalSeconds <= 120)
+                    state = UserOnlineState.Inactive;
+
+                return (state, diff);
+            }
+            else
+                return (UserOnlineState.Unknown, null);
+        }
+
         internal DBUserAuthentification DecodeUAuth(DBUserAuthentification auth)
         {
             auth.LastUserAgent = SQLDecode(auth.LastUserAgent);
@@ -953,5 +980,30 @@ namespace ASC.Server
         /// The user's last estimated location
         /// </summary>
         public string LastLocation { get; set; }
+    }
+
+    /// <summary>
+    /// Represents an enumeration of all possible user online states
+    /// </summary>
+    [Serializable]
+    public enum UserOnlineState
+        : byte
+    {
+        /// <summary>
+        /// The user is currently active (logged in within the last 30sec)
+        /// </summary>
+        Active,
+        /// <summary>
+        /// The user is currently inactive (logged in within the last 2min, but not during the last 30sec)
+        /// </summary>
+        Inactive,
+        /// <summary>
+        /// The user is currently offline (has not logged in within the last 2min)
+        /// </summary>
+        Offline,
+        /// <summary>
+        /// The user's online state is unknown or not defined
+        /// </summary>
+        Unknown
     }
 }

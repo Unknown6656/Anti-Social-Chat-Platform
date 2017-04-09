@@ -12,6 +12,7 @@
   "error": {
     "noscript": "Javascript muss aktiviert sein, um diese Webseite vollständig nutzen zu können.",
     "webkit": "You should use a webkit-based browser to enjoy all of the page&quot;s features.", // TODO
+    "notification": "Ihr Browser unterstützt keine Benachrichtigungen. Bitte ziehen Sie ein Update oder Wechsel des Browsers in Erwägung.",
     "error": "Fehler",
     "500": "Dienst derzeitig nicht verfügbar",
     "400": "Ungültige Operation",
@@ -81,7 +82,8 @@
     "forgot": "GUID vergessen?<br/>Hier können Sie nach Ihrer GUID auf Basis des sichtbaren Namens suchen:",
     "membersince": "Mitglied seit",
     "admin": "Administrator",
-    "locked": "Gesperrt"
+    "locked": "Gesperrt",
+    "login": "Mit dieser GUID einloggen"
   },
   "global": {
     "title": "Antisoziale Chat Plattform",

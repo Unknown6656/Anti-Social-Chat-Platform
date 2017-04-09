@@ -12,6 +12,7 @@
   "error": {
     "noscript": "You need to enable Javascript to use this website properly.",
     "webkit": "You should use a webkit-based browser to enjoy all of the page&quot;s features.",
+    "notification": "Your browser does not support notifications. Consider switching to a newer version or a different browser.",
     "error": "Error",
     "500": "Service currently not available",
     "400": "Invalid operation",
@@ -81,7 +82,8 @@
     "forgot": "Forgot your GUID?<br/>You can search here for your GUID using your visible name:",
     "membersince": "Member since",
     "admin": "Administrator",
-    "locked": "Blocked"
+    "locked": "Blocked",
+    "login": "Login with this GUID"
   },
   "global": {
     "title": "Anti-Social Chat Platform",

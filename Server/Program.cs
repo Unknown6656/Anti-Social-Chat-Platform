@@ -259,6 +259,9 @@ namespace ASC.Server
             using (Mutex m = new Mutex(false, Win32.MUTEX))
                 try
                 {
+                    Console.CancelKeyPress += delegate { throw new ForcedShutdown(); };
+                    AppDomain.CurrentDomain.ProcessExit += delegate { throw new ForcedShutdown(); };
+
                     if (m.WaitOne(0, false) || containsarg(args, ARG_IGNMTX))
                     {
                         if (containsarg(args, ARG_SLOWSTART))
