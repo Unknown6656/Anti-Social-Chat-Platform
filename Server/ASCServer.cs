@@ -144,6 +144,8 @@ namespace ASC.Server
                             Hash = auth.Hash,
                         };
                     }
+                    //else
+                    //    DeleteTemporaryUser(??, db);
 
                     throw null;
                 }, ASCOperationPrivilege.Regular, "name", "g-recaptcha-response"),
@@ -158,18 +160,8 @@ namespace ASC.Server
                 ["auth_refr_session"] = new ASCOperation((req, res, vals, db) => Unit, ASCOperationPrivilege.User, keys: "session"),
                 ["auth_update"] = new ASCOperation((req, res, vals, db) => db.UpdateUserHash(long.Parse(vals["id"]), vals["new"]), keys: "new"),
                 ["delete_tmp"] = new ASCOperation((req, res, vals, db) => {
-                    long id = long.Parse(vals["id"]);
-                    bool result = false;
-
-                    if (TemporaryUsers.ContainsKey(id))
-                        if (db.VerifyUser(id, vals["hash"]))
-                        {
-                            db.DeleteUser(id);
-
-                            result = true;
-                        }
-
-                    return result;
+                    lock (TemporaryUsers)
+                        return DeleteTemporaryUser(long.Parse(vals["id"]), db);
                 }, ASCOperationPrivilege.Regular, "id", "hash"),
 
                 #endregion
@@ -185,6 +177,11 @@ namespace ASC.Server
                     throw new ForcedShutdown();
                 }, ASCOperationPrivilege.Administrator),
                 ["display"] = new ASCOperation((req, res, vals, db) => vals[vals["_key"]], ASCOperationPrivilege.Administrator, keys : "_key"),
+                ["clear_tmp"] = new ASCOperation((req, res, vals, db) => {
+                    DeleteTemporaryUsers(db);
+
+                    return Unit;
+                }, ASCOperationPrivilege.Administrator),
 
                 #endregion
             };
@@ -733,6 +730,32 @@ namespace ASC.Server
                 res = m.Groups["content"].ToString();
 
             return JsonConvert.DeserializeObject<GeoIPResult>(res);
+        }
+
+        internal static bool DeleteTemporaryUsers(Database db)
+        {
+            bool result = false;
+
+            lock (TemporaryUsers)
+                foreach (long id in TemporaryUsers.Keys)
+                    result |= DeleteTemporaryUser(id, db);
+
+            return result;
+        }
+
+        internal static bool DeleteTemporaryUser(long id, Database db)
+        {
+            DBUser user = TemporaryUsers[id];
+            bool result;
+
+            if (result = db?.HasUser(id) ?? false)
+            {
+                db?.DeleteUser(id);
+
+                $"Temporary user {{{user.UUID}}} ({user.Name}) deleted.".Ok();
+            }
+
+            return result;
         }
     }
 

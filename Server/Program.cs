@@ -389,6 +389,8 @@ namespace ASC.Server
                         $"Function '{function}' loaded.".Ok();
                     }
 
+                    database.Cleanup();
+
                     $"{database.UserCount} registered user(s) have been found inside the database.".Msg();
                     $"{database.AdminCount} registered administrator(s) have been found inside the database.".Msg();
                     $"{database.MessageCount} sent message(s) have been found inside the database.".Msg();
@@ -418,24 +420,15 @@ namespace ASC.Server
                 {
                     #region CLEANUP
 
+                    database.Cleanup();
+
                     acceptconnections = false;
 
                     Authentification.Stop();
 
-                    lock (ASCServer.TemporaryUsers)
-                        foreach (long id in ASCServer.TemporaryUsers.Keys)
-                        {
-                            DBUser user = ASCServer.TemporaryUsers[id];
+                    ASCServer.DeleteTemporaryUsers(database);
 
-                            if (database?.HasUser(id) ?? false)
-                            {
-                                database?.DeleteUser(id);
-
-                                $"Temporary user {{{user.UUID}}} ({user.Name}) deleted.".Ok();
-                            }
-                        }
-
-                    "Disconnicting from the database ...".Msg();
+                    "Disconnecting from the database ...".Msg();
 
                     #endregion
                 }

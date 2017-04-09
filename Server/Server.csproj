@@ -124,6 +124,9 @@
     <Content Include="Resources\sha512.js" />
     <Content Include="Resources\style.desktop.css" />
     <Content Include="Resources\style.mobile.css" />
+    <Content Include="SQLScripts\Cleanup.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="SQLScripts\dbo.Functions.Trim.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -131,6 +134,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="SQLScripts\UpdateUserHash.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SQLScripts\AddUser.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="SQLScripts\VerifyUser.sql">

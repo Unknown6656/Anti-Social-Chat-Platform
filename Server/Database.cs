@@ -113,42 +113,9 @@ namespace ASC.Server
             if (!ValidateUser(user))
                 return null;
 
-            ExecuteVoid($@"INSERT INTO {DB}.{USERS} (
-                                [ID],
-                                [Name],
-                                [Status],
-                                [IsAdmin],
-                                [IsBlocked],
-                                [UUID],
-                                [MemberSince]
-                            ) VALUES (
-                                {user.ID},
-                                '{user.Name}',
-                                '{user.Status}',
-                                {(user.IsAdmin ? 1 : 0)},
-                                {(user.IsBlocked ? 1 : 0)},
-                                NEWID(),
-                                GETDATE()
-                            )");
-            ExecuteVoid($@"INSERT INTO {DB}.{UAUTH} (
-                                [ID],
-                                [Hash],
-                                [Salt],
-                                [Session],
-                                [LastIP],
-                                [LastLogin],
-                                [LastUserAgent]
-                                [LastLocation]
-                            ) VALUES (
-                                {user.ID},
-                                '',
-                                '{auth.Salt}',
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL
-                            )");
+            var sql = GetScript(nameof(AddUser), user.ID, auth.Salt, user.Name, user.Status, user.IsAdmin ? 1 : 0, user.IsBlocked ? 1 : 0);
+
+            ExecuteVoid(sql);
 
             user = GetUser(user.ID); // update user
 
@@ -157,6 +124,10 @@ namespace ASC.Server
             return DecodeUAuth(auth);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
         public void DeleteUser(long id) => ExecuteVoid($"DELETE FROM {USERS} WHERE [ID] = {id}");
 
         /// <summary>
@@ -456,6 +427,11 @@ namespace ASC.Server
 
         #endregion
         #region GENERAL
+
+        /// <summary>
+        /// Cleans up the database
+        /// </summary>
+        public void Cleanup() => ExecuteVoid(GetScript(nameof(Cleanup)));
 
         /// <summary>
         /// Creates the function from the script 'dbo.Functions.&lt;name&gt;.sql'
