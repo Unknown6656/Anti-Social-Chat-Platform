@@ -467,8 +467,7 @@ namespace ASC.Server
             #endregion
             #region GEOIP HANDLING
 
-            initlang();
-            InitLocation(geoip, vars);
+            InitLocation(geoip, ref vars);
             setstyles();
 
             #endregion
@@ -576,7 +575,9 @@ namespace ASC.Server
                 try
                 {
                     if (ascop.RequiresLocation || (ascop.Privilege > ASCOperationPrivilege.Regular))
-                        InitLocation(geoip, vars);
+                        InitLocation(geoip, ref vars);
+
+                    string loc = values.ContainsKey("location") ? values["location"] : null;
 
                     if (ascop.Privilege > ASCOperationPrivilege.Regular)
                     {
@@ -586,7 +587,7 @@ namespace ASC.Server
                         session = null;
 
                         if (contains(request, "hash", out string hash))
-                            res &= verify(request, tSQL, sid, hash, values["location"], out session);
+                            res &= verify(request, tSQL, sid, hash, loc, out session);
 
                         if (session == null)
                             if (contains(request, "session", out session))
@@ -597,7 +598,7 @@ namespace ASC.Server
                                 {
                                     DBUser temp = tSQL.GetUserBySession(session);
 
-                                    tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, values["location"], out session);
+                                    tSQL.AutoLogin(temp.ID, request.RemoteEndPoint.ToString(), request.UserAgent, loc, out session);
 
                                     user = temp; // copy after login due to possible failure
                                 }
@@ -651,7 +652,7 @@ namespace ASC.Server
             return FetchResource(Resources.frame, vars);
         }
 
-        private void InitLocation(Task<GeoIPResult> geoip, Dictionary<string, object> vars)
+        private void InitLocation(Task<GeoIPResult> geoip, ref Dictionary<string, object> vars)
         {
             geoip.Wait();
 
@@ -840,48 +841,60 @@ namespace ASC.Server
     }
 
     /// <summary>
-    /// 
+    /// Represents a GeoIP query result
     /// </summary>
     public sealed class GeoIPResult
     {
         /// <summary>
-        /// 
+        /// The country code
         /// </summary>
         public string country_code { set; get; }
         /// <summary>
-        /// 
+        /// The country name
         /// </summary>
         public string country_name { set; get; }
         /// <summary>
-        /// 
+        /// The city name
         /// </summary>
         public string city { set; get; }
         /// <summary>
-        /// 
+        /// The city postal code
         /// </summary>
         public string postal { set; get; }
         /// <summary>
-        /// 
+        /// The latitude (°N)
         /// </summary>
         public decimal latitude { set; get; }
         /// <summary>
-        /// 
+        /// The longitude (°E)
         /// </summary>
         public decimal longitude { set; get; }
         /// <summary>
-        /// 
+        /// The IPv4 address
         /// </summary>
         public string IPv4 { set; get; }
         /// <summary>
-        /// 
+        /// The state name
         /// </summary>
         public string state { set; get; }
     }
 
-    internal sealed class ReCaptchaResult
+    /// <summary>
+    /// Represents a ReCaptcha query result
+    /// </summary>
+    public sealed class ReCaptchaResult
     {
+        /// <summary>
+        /// Success state
+        /// </summary>
         public bool success { set; get; }
+        /// <summary>
+        /// The challenge timestamp
+        /// </summary>
         public string challenge_ts { set; get; }
+        /// <summary>
+        /// The host name
+        /// </summary>
         public string hostname { set; get; }
     }
 
