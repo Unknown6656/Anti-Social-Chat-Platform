@@ -1,9 +1,11 @@
 ﻿using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Collections.Generic;
+using System.Drawing.Imaging;
 using System.Threading.Tasks;
 using System.Data.SqlClient;
 using System.Reflection;
+using System.Drawing;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -11,8 +13,11 @@ using System.IO;
 using System;
 
 using Newtonsoft.Json;
+using SeeSharp.Effects;
+using SeeSharp;
 
 using static ASC.Server.Database.DatabaseHelper;
+using static ASC.Server.Program;
 
 namespace ASC.Server
 {
@@ -29,6 +34,7 @@ namespace ASC.Server
         internal const string CHATS = "[Chats]";
         internal const string USERS = "[Users]";
         internal const string DB = "[dbo]";
+        internal const int IMG_SIZE = 1024;
 
         private static Database instance;
         private bool disposed = false;
@@ -218,13 +224,56 @@ namespace ASC.Server
             bool perfectmatch(DBUser user) => user?.Name?.ToLower() == name?.ToLower();
         }
 
+        /// <summary>
+        /// Returns the user profile image associated with the given ID
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User profile image</returns>
+        public Bitmap GetUserImage(long id)
+        {
+            DBUser user = GetUser(id);
+            string path = $@"{DIR_PROFILEIMAGES}\{{{user.UUID}}}.png";
+
+            if (!File.Exists(path))
+                return Properties.Resources.profile_default;
+            else
+                return Bitmap.FromFile(path) as Bitmap;
+        }
+
+        /// <summary>
+        /// Sets the user profile image to the given one
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <param name="img">New user profile image</param>
+        public void SetUserImage(long id, Image img)
+        {
+            if (img == null)
+                img = Properties.Resources.profile_default;
+
+            using (Bitmap bg = new Bitmap(img).ApplyEffect<FastBlurBitmapEffect>(20))
+            using (Bitmap bmp = new Bitmap(IMG_SIZE, IMG_SIZE))
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                double ratio = img.Width / (double)img.Height;
+                DBUser user = GetUser(id);
+
+                float bs = (float)(ratio >= 1 ? img.Height : img.Width) / IMG_SIZE;
+                float ss = (float)(ratio < 1 ? img.Height : img.Width) / IMG_SIZE;
+
+                g.DrawImage(bg, -img.Width * (1 - bs) / 2, 0, bs * img.Width, bs * img.Height);
+                g.DrawImage(img, img.Height * (1 - ss) / 2, 0, ss * img.Width, ss * img.Height);
+
+                bmp.Save($@"{DIR_PROFILEIMAGES}\{{{user.UUID}}}.png", ImageFormat.Png);
+            }
+        }
+
         internal bool CanChangeName(string newname) => !Execute($"SELECT 0 FROM {USERS} WHERE UPPER([Name]) = '{newname?.ToUpper() ?? ""}'").Any();
 
         internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
-                                                   ASCServer.regex(user?.Status ?? "", @"^[^\'\""`´]+$", out _) &&
-                                                   !(ASCServer.regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
+                                                   regex(user?.Status ?? "", @"^[^\'\""`´]+$", out _) &&
+                                                   !(regex(user?.Name + user?.Status, "unknown_*6656", out _, RegexOptions.IgnoreCase | RegexOptions.Compiled) && user?.ID != -1);
 
-        internal bool ValidateUserName(string name) => ASCServer.regex(name ?? "", @"^[\w\-\. ]{1,49}$", out _);
+        internal bool ValidateUserName(string name) => regex(name ?? "", @"^[\w\-\. ]{1,49}$", out _);
 
         #endregion
         #region AUTHENTIFICATION MANAGEMENT
@@ -360,7 +409,7 @@ namespace ASC.Server
             return auth;
         }
 
-        internal bool ValidateHash(string hash) => ASCServer.regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _) || (hash?.ToLower() ?? "null") == "null";
+        internal bool ValidateHash(string hash) => regex(hash ?? "", @"^[a-fA-F0-9]{128}$", out _) || (hash?.ToLower() ?? "null") == "null";
 
         #endregion
         #region MESSAGE MANAGEMENT

@@ -74,6 +74,9 @@
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="SeeSharp">
+      <HintPath>..\libraries\SeeSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Services" />
@@ -110,6 +113,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\frame.compact.html" />
     <Content Include="Resources\ico_de.png" />
     <Content Include="Resources\ico_en.png" />
     <Content Include="Resources\ico_fr.png" />
@@ -121,6 +125,7 @@
     <Content Include="Resources\login.html" />
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />
+    <Content Include="Resources\profile_default.png" />
     <Content Include="Resources\sha512.js" />
     <Content Include="Resources\style.desktop.css" />
     <Content Include="Resources\style.mobile.css" />

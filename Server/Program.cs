@@ -2,6 +2,7 @@
 
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Net.NetworkInformation;
 using System.ServiceModel.Security;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ using System.IO;
 using System;
 
 using NetFwTypeLib;
+using Newtonsoft.Json;
 
 namespace ASC.Server
 {
@@ -35,6 +37,9 @@ namespace ASC.Server
         internal const string ARG_OFFLINE = "--offline-mode";
         internal const string ARG_NOLOG = "--no-log-save";
 
+        internal const string DIR_DATA = @".\data";
+        internal const string DIR_PROFILEIMAGES = DIR_DATA + @"\profiles";
+
         internal static readonly string[] PingStations = @"8.8.8.8,
                                                            8.8.4.4,
                                                            google.com,
@@ -46,9 +51,9 @@ namespace ASC.Server
                                                            [2001:4860:4860::8888],
                                                            [2001:4860:4860::8844],
                                                            [2620:0:862:ed1a::1]".Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(_ => _.Trim()).ToArray();
-
-        internal static string recaptcha_private = null;
-        internal static bool acceptconnections = false;
+        internal static List<string> HostNames = new List<string>();
+        internal static string recaptcha_private;
+        internal static bool acceptconnections;
         private static Database database;
 
 
@@ -100,6 +105,38 @@ namespace ASC.Server
 
                     throw null;
                 }
+            },
+            args => {
+                HostNames.Add(Dns.GetHostName());
+                HostNames.AddRange(Dns.GetHostAddresses(HostNames[0]).Select(_ => _.ToString()));
+
+                try
+                {
+                    dynamic data;
+                    string phost;
+
+                    using (WebClient wc = new WebClient())
+                        data = JsonConvert.DeserializeObject(wc.DownloadString(@"https://wtfismyip.com/json"));
+
+                    HostNames.Add(phost = data["YourFuckingHostname"]);
+                    HostNames.AddRange(Dns.GetHostAddresses(phost).Select(_ => _.ToString()));
+                }
+                catch
+                {
+                    "Unable to resolve public IP addresses and host names.".Err();
+                }
+
+                foreach (string host in HostNames)
+                    $"Server resolved to '{host}'.".Msg();
+            },
+            args => {
+                foreach (string dir in new string [] { DIR_DATA, DIR_PROFILEIMAGES })
+                    if (!Directory.Exists(dir))
+                    {
+                        $"Directory '{dir}' could not be found. It will be re-created ...".Warn();
+
+                        Directory.CreateDirectory(dir);
+                    }
             },
         };
 
@@ -155,6 +192,9 @@ namespace ASC.Server
             }
         }
 
+#if USE_SERVICEHOST
+#pragma warning disable RCS1163
+#endif
         /// <summary>
         /// Binds the given certificate from the given store to the given ip:port and returns the newly created service host
         /// </summary>
@@ -207,6 +247,8 @@ namespace ASC.Server
 
             return null;
         }
+
+#pragma warning restore
 
         /// <summary>
         /// The application's main entry point
@@ -457,6 +499,8 @@ namespace ASC.Server
 
             return res;
         }
+
+        internal static bool regex(string input, string pattern, out Match m, RegexOptions opt = RegexOptions.IgnoreCase) => (m = Regex.Match(input, pattern, opt)).Success;
     }
 
     internal static class FirewallUtils

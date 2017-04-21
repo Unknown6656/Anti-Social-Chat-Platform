@@ -77,10 +77,14 @@ namespace ASC.Server.Properties {
         ///    User logged in with:
         ///    &lt;br/&gt;
         ///    &lt;pre&gt;§user§&lt;/pre&gt;
-        ///    &lt;br/&gt;
+        ///    &lt;br /&gt;
         ///    and session:
         ///    &lt;br /&gt;
         ///    &lt;pre&gt;§user_auth§&lt;/pre&gt;
+        ///    &lt;br /&gt;
+        ///    and location:
+        ///    &lt;br /&gt;
+        ///    &lt;pre&gt;§location§&lt;/pre&gt;
         ///&lt;/div&gt;.
         /// </summary>
         internal static string chat {
@@ -145,6 +149,24 @@ namespace ASC.Server.Properties {
         internal static string frame {
             get {
                 return ResourceManager.GetString("frame", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;!DOCTYPE html&gt;
+        ///&lt;!--
+        ///    AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§
+        ///    All server variables can be accessed using the identifier between two paragraph-symbols (&apos;§&apos;).
+        ///    All resources which are compiled into the assembly must be accessed with &apos;res~____~____&apos; (where the first ____ stands for the resource name and the second ____ for its MIME-type)
+        ///--&gt;
+        ///&lt;html lang=&quot;§lang_code§&quot; xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta name=&quot;§lang_name§&quot; content=&quot;§lang_code§&quot;/&gt;
+        ///        &lt;met [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string frame_compact {
+            get {
+                return ResourceManager.GetString("frame_compact", resourceCulture);
             }
         }
         
@@ -283,20 +305,24 @@ namespace ASC.Server.Properties {
         /// <summary>
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
-        ///$(document).ready(function () {
-        ///    var inner = $(&apos;#header, #content, #footer&apos;);
+        ///// I cannot use the ES6-backtick syntax, because of incompatiblity with older browsers -__-
         ///
+        ///if (!Date.now) {
+        ///    Date.now = function now() {
+        ///        return new Date().getTime();
+        ///    };
+        ///}
+        ///
+        ///$(document).ready(function () {
         ///    $(&apos;#noscript&apos;).css(&apos;display&apos;, &apos;none&apos;);
+        ///
+        ///    inner = $(&apos;#header, #content, #footer&apos;);
         ///    inner.removeClass(&apos;blurred&apos;);
         ///
         ///    session = $.cookie(&quot;_sess&quot;);
         ///
         ///    $.cookie(&quot;_lang&quot;, &apos;§lang_code§&apos;);
-        ///    $(&apos;#content&apos;).css(&apos;top&apos;, ($(&apos;#header&apos;).height() + 20) + &apos;px&apos;);
-        ///    $(&apos;#content&apos;).css(&apos;margin-bottom&apos;, ($(&apos;#footer&apos;).height() + 20) + &apos;px&apos;);
-        ///
-        ///    //if (!$.browser.webkit) {
-        ///    //    $(&apos;#main&apos;).html(`&lt;div c [rest of string was truncated]&quot;;.
+        ///    $(&apos;#content&apos;).cs [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -312,13 +338,28 @@ namespace ASC.Server.Properties {
         ///var https_uri = &apos;https://§host§:§port_https§&apos;;
         ///var base_uri = &apos;§protocol§://§host§:§port§/&apos;;
         ///var api_uri = base_uri + &apos;api.json?lang=§lang_code§&apos;;
+        ///var is_main_page = §main_page§;
         ///var session = &apos;&apos;;
         ///var avail_lang = [§lang_avail§];
+        ///var ival_down;
+        ///var inner; // jquery inner
+        ///var server_offs; // offset from server time to this time [in ms]
+        ///var user = §user§;
         ///.
         /// </summary>
         internal static string pre_script {
             get {
                 return ResourceManager.GetString("pre_script", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap profile_default {
+            get {
+                object obj = ResourceManager.GetObject("profile_default", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         

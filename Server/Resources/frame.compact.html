@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<!--
+    AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§
+    All server variables can be accessed using the identifier between two paragraph-symbols ('§').
+    All resources which are compiled into the assembly must be accessed with 'res~____~____' (where the first ____ stands for the resource name and the second ____ for its MIME-type)
+-->
+<html lang="§lang_code§" xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta name="§lang_name§" content="§lang_code§"/>
+        <meta charset="utf-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta name="title" content="§global_title§"/>
+        <meta name="description" content="§global_descr§"/>
+        <meta name="robots" content="all"/>
+        <meta name="rating" content="general"/>
+        <link rel="manifest" href="res~app.webmanifest~application/manifest+json">
+        <link rel="icon" href="res~favicon~image/x-icon" type="image/x-icon"/>
+        <title>§global_title§</title>
+        <style type="text/css">
+§style§
+§style_mobile§
+§style_desktop§
+        </style>
+    </head>
+    <body>
+        <div id="content">
+            <div id="main">
+                §inner§
+            </div>
+        </div>
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <defs>
+                <filter id="svg-blur">
+                    <feGaussianBlur stdDeviation="10" />
+                </filter>
+                <filter id="drop-shadow">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" />
+                    <feOffset dx="10" dy="10" result="offsetblur" />
+                    <feFlood flood-color="#000000" />
+                    <feComposite in2="offsetblur" operator="in" />
+                    <feMerge>
+                        <feMergeNode />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+        </svg>
+    </body>
+</html>

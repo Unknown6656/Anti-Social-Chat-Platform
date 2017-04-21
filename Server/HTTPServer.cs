@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Text.RegularExpressions;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Threading;
@@ -10,15 +11,25 @@ using System;
 
 using Newtonsoft.Json;
 
+using static ASC.Server.Program;
+
 namespace ASC.Server
 {
+    /// <summary>
+    /// Represents a specialized HTTP request handler delegate method
+    /// </summary>
+    /// <param name="request">HTTP request data</param>
+    /// <param name="response">HTTP response data</param>
+    /// <param name="geoip">GeoIP task</param>
+    public delegate HTTPResponse HTTPRequestHandler(HttpListenerRequest request, HttpListenerResponse response, Task<GeoIPResult> geoip);
+
     /// <summary>
     /// Represents an HTTP server
     /// </summary>
     public sealed class HTTPServer
         : IDisposable
     {
-        private readonly Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> _rfunc;
+        private readonly HTTPRequestHandler _rfunc;
         private readonly HttpListener _listener = new HttpListener();
 
 
@@ -27,7 +38,7 @@ namespace ASC.Server
         /// </summary>
         /// <param name="prefixes">HTTP(S) listening prefixes</param>
         /// <param name="func">Listening handling function</param>
-        public HTTPServer(string[] prefixes, Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> func)
+        public HTTPServer(string[] prefixes, HTTPRequestHandler func)
         {
             if (!HttpListener.IsSupported)
             {
@@ -55,7 +66,7 @@ namespace ASC.Server
         /// </summary>
         /// <param name="method">Listening handling function</param>
         /// <param name="prefixes">HTTP(S) listening prefixes</param>
-        public HTTPServer(Func<HttpListenerRequest, HttpListenerResponse, HTTPResponse> method, params string[] prefixes)
+        public HTTPServer(HTTPRequestHandler method, params string[] prefixes)
             : this(prefixes, method)
         {
         }
@@ -112,13 +123,16 @@ namespace ASC.Server
             {
                 $"'{ctx.Request.RemoteEndPoint}' requests '{ctx.Request.LocalEndPoint}{ctx.Request.RawUrl}' ...".Msg();
 
-                HTTPResponse resp = _rfunc(ctx.Request, ctx.Response);
+                Task<GeoIPResult> geoip = Task<GeoIPResult>.Run(() => GetGeoIPResult(ctx.Request.RemoteEndPoint));
+                HTTPResponse resp = _rfunc(ctx.Request, ctx.Response, geoip);
 
                 ctx.Response.ContentEncoding = HTTPResponse.Codepage;
                 ctx.Response.ContentLength64 = resp.Length;
                 ctx.Response.OutputStream.Write(resp.Bytes ?? new byte[0], 0, resp.Length);
 
                 $"Response sent to '{ctx.Request.RemoteEndPoint}' with the status code '{ctx.Response?.StatusCode ?? 500} - {ctx.Response?.StatusDescription ?? "Internal error"}'".Msg();
+
+                TaskKiller(geoip);
             }
             catch (Exception ex)
             {
@@ -136,6 +150,47 @@ namespace ASC.Server
                 ctx.Response.OutputStream.Close();
             }
         }
+
+        internal static GeoIPResult GetGeoIPResult(IPEndPoint endpoint)
+        {
+            IPHostEntry host = Dns.GetHostEntry(endpoint.Address);
+            string ip = endpoint.Address.ToString();
+            string res;
+
+            if (regex(ip, @"^\[(?<ip>[\:0-9a-f]+)\](\:[0-9]+)?$", out Match m)) // strip '[' and ']'
+                ip = m.Groups[nameof(ip)].ToString();
+
+            using (WebClient wc = new WebClient())
+                try
+                {
+                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{(host.AddressList.Any(_ => _ == IPAddress.IPv6Loopback || _ == IPAddress.Loopback) ? ip.ToUpper() : "")}");
+                }
+                catch
+                {
+                    return null;
+                }
+
+            $"Location of {endpoint} resloved to '{res.Replace("\r", "").Replace("\n", "")}'.".Msg();
+
+            if (regex(res, @"^callback\s*\((?<content>.+)\)", out m))
+                res = m.Groups["content"].ToString();
+
+            return JsonConvert.DeserializeObject<GeoIPResult>(res);
+        }
+
+        // a task will be launched to wait for the termination of an existing async task .... now that's meta.
+        internal static void TaskKiller(Task<GeoIPResult> task) => Task.Factory.StartNew(() =>
+        {
+            using (task)
+                if (!(task.IsCompleted || task.IsFaulted || task.IsCanceled))
+                {
+                    $"Waiting for the termination of task 0x{task.Id:x8}...".Msg();
+
+                    task.Wait();
+
+                    $"Task 0x{task.Id:x8} terminated.".Msg();
+                }
+        });
     }
 
     /// <summary>
