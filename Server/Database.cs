@@ -648,39 +648,34 @@ namespace ASC.Server
 
             internal static string Wrap(string sql) => $"BEGIN TRANSACTION; {sql}; COMMIT TRANSACTION;";
 
-            internal static void ExecuteVoid(string sql)
+            private static SqlCommand CreateCommand(string sql)
             {
                 LogSQL(sql);
 
-                using (SqlCommand cmd = new SqlCommand(Wrap(sql), Connection))
-                    cmd.ExecuteNonQuery();
+                using (SqlCommand cmd = new SqlCommand(sql, Connection))
+                    return cmd;
             }
+
+            internal static void ExecuteVoid(string sql) => CreateCommand(Wrap(sql)).ExecuteNonQuery();
 
             internal static IEnumerable<T> Execute<T>(string sql)
                 where T : IDBType, new()
             {
-                LogSQL(sql);
-
-                using (SqlCommand cmd = new SqlCommand(Wrap(sql), Connection))
-                using (SqlDataReader rd = cmd.ExecuteReader())
+                using (SqlDataReader rd = CreateCommand(Wrap(sql)).ExecuteReader())
                     while (rd.Read())
                         yield return Create<T>(rd);
             }
 
             internal static IEnumerable<dynamic> Execute(string sql)
             {
-                LogSQL(sql);
-
-                using (SqlCommand cmd = new SqlCommand(sql, Connection))
-                using (SqlDataReader rd = cmd.ExecuteReader())
+                using (SqlDataReader rd = CreateCommand(sql).ExecuteReader())
                     foreach (object obj in rd)
                         yield return obj;
             }
 
             internal static string ExecuteToJSON(string sql)
             {
-                using (SqlCommand cmd = new SqlCommand(sql, Connection))
-                using (SqlDataReader rd = cmd.ExecuteReader())
+                using (SqlDataReader rd = CreateCommand(sql).ExecuteReader())
                     return toJSON(rd).GetAwaiter().GetResult();
             }
 

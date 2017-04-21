@@ -176,7 +176,7 @@ namespace ASC.Server
 
                 ["raw_sql"] = new ASCOperation((req, res, vals, db) => JsonConvert.DeserializeObject(Database.DatabaseHelper.ExecuteToJSON(vals["cmd"])), ASCOperationPrivilege.Administrator, "cmd"),
                 ["save_log"] = new ASCOperation(delegate {
-                    Logger.Save(Directory.GetCurrentDirectory());
+                    ConsoleLogger.Save(Directory.GetCurrentDirectory());
 
                     return Unit;
                 }, ASCOperationPrivilege.Administrator),
@@ -864,11 +864,11 @@ namespace ASC.Server
         /// <summary>
         /// The latitude (°N)
         /// </summary>
-        public decimal latitude { set; get; }
+        public decimal? latitude { set; get; }
         /// <summary>
         /// The longitude (°E)
         /// </summary>
-        public decimal longitude { set; get; }
+        public decimal? longitude { set; get; }
         /// <summary>
         /// The IPv4 address
         /// </summary>

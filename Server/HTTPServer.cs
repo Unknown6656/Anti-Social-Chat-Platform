@@ -90,7 +90,7 @@ namespace ASC.Server
             }
             finally
             {
-                Program.acceptconnections = false;
+                acceptconnections = false;
             }
         }
 
@@ -121,7 +121,7 @@ namespace ASC.Server
 
             try
             {
-                $"'{ctx.Request.RemoteEndPoint}' requests '{ctx.Request.LocalEndPoint}{ctx.Request.RawUrl}' ...".Msg();
+                $"'{ctx.Request.RemoteEndPoint}' requests '{ctx.Request.LocalEndPoint}{ctx.Request.RawUrl}' ...".Conn();
 
                 Task<GeoIPResult> geoip = Task<GeoIPResult>.Run(() => GetGeoIPResult(ctx.Request.RemoteEndPoint));
                 HTTPResponse resp = _rfunc(ctx.Request, ctx.Response, geoip);
@@ -153,24 +153,37 @@ namespace ASC.Server
 
         internal static GeoIPResult GetGeoIPResult(IPEndPoint endpoint)
         {
-            IPHostEntry host = Dns.GetHostEntry(endpoint.Address);
             string ip = endpoint.Address.ToString();
+            bool isloopback = false;
             string res;
+
+            try
+            {
+                var host = Dns.GetHostEntry(endpoint.Address);
+
+                isloopback = host.AddressList.Any(_ => _ == IPAddress.IPv6Loopback || _ == IPAddress.Loopback) ||
+                             HostNames.Any(_ => _.Equals(ip, StringComparison.InvariantCultureIgnoreCase));
+            }
+            catch
+            {
+            }
 
             if (regex(ip, @"^\[(?<ip>[\:0-9a-f]+)\](\:[0-9]+)?$", out Match m)) // strip '[' and ']'
                 ip = m.Groups[nameof(ip)].ToString();
 
+            ip = isloopback ? "" : ip.ToUpper();
+
             using (WebClient wc = new WebClient())
                 try
                 {
-                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{(host.AddressList.Any(_ => _ == IPAddress.IPv6Loopback || _ == IPAddress.Loopback) ? ip.ToUpper() : "")}");
+                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{ip}");
                 }
                 catch
                 {
                     return null;
                 }
 
-            $"Location of {endpoint} resloved to '{res.Replace("\r", "").Replace("\n", "")}'.".Msg();
+            $"Location of '{endpoint}' resloved to '{res.Replace("\r", "").Replace("\n", "")}'.".Conn();
 
             if (regex(res, @"^callback\s*\((?<content>.+)\)", out m))
                 res = m.Groups["content"].ToString();

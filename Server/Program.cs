@@ -140,6 +140,7 @@ namespace ASC.Server
             },
         };
 
+
         private static bool containsarg(IEnumerable<string> args, string a) => args.Any(_ => _.ToLower().Trim() == a.ToLower().Trim());
 
         /// <summary>
@@ -263,6 +264,8 @@ namespace ASC.Server
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
             WindowsPrincipal principal = new WindowsPrincipal(identity);
 
+            ConsoleLogger.Flush();
+
             $"Application started with the following {args.Length} argument(s):".Msg();
 
             for (int i = 0; i < args.Length; i++)
@@ -270,16 +273,11 @@ namespace ASC.Server
 
             try
             {
-                Logger.Flush();
                 Win32.ShowWindow(Process.GetCurrentProcess().MainWindowHandle, 3);
             }
             catch
             {
                 "Unable to resize console window ... aren't you running in GUI mode?".Warn();
-            }
-            finally
-            {
-                Logger.Flush();
             }
 
             if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
@@ -356,10 +354,10 @@ namespace ASC.Server
 
                     "Logging service shutting down.".Info();
 
-                    Logger.Flush();
+                    ConsoleLogger.Flush();
 
                     if (!containsarg(args, ARG_NOLOG))
-                        Logger.Save(Directory.GetCurrentDirectory());
+                        ConsoleLogger.Save(Directory.GetCurrentDirectory());
 
                     if (Debugger.IsAttached | (Win32.GetConsoleWindow() != IntPtr.Zero))
                     {
@@ -610,34 +608,19 @@ namespace ASC.Server
         }
     }
 
-    internal static class Logger
+    internal static class ConsoleLogger
     {
-        private static readonly StringBuilder log = new StringBuilder();
-        private static readonly Queue<Action> actions = new Queue<Action>();
-        private static readonly DateTime startup = DateTime.Now;
+        private static readonly LoggerBase log_output = new LoggerBase("output");
+        private static readonly LoggerBase log_conn = new LoggerBase("connections");
 
 
-        internal static string Log => log.ToString();
-
-        static Logger()
-        {
-            ThreadPool.QueueUserWorkItem(delegate
-            {
-                while (true)
-                    if (actions.Count > 0)
-                        actions.Dequeue()?.Invoke();
-            });
-
-            $"Logger service started at {startup:yyyy-MM-dd HH:mm:ss.ffffff}".Info();
-        }
-
-        private static void PrintColored(this string str, string prefix, ConsoleColor col) => actions.Enqueue(delegate
+        private static void PrintColored(this string str, string prefix, ConsoleColor col) => log_output.Append(delegate
         {
             DateTime now = DateTime.Now;
 
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write('[');
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"{now:HH:mm:ss:ffffff}");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("][");
@@ -649,16 +632,8 @@ namespace ASC.Server
             Console.WriteLine(str ?? "");
             Console.ForegroundColor = ConsoleColor.White;
 
-            log.AppendLine($"[{now:yyyy-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}");
+            return $"[{now:yyyy-MM-dd HH:mm:ss:ffffff}] [{prefix}] {str ?? ""}";
         });
-
-        internal static void Flush()
-        {
-            while (actions.Count > 0)
-                ;
-        }
-
-        internal static void Clear() => actions.Enqueue(() => log.Clear());
 
         internal static void Err(this Exception ex)
         {
@@ -688,12 +663,83 @@ namespace ASC.Server
 
         internal static void Sql(this string str) => PrintColored(str, "tSQL", ConsoleColor.Cyan);
 
+        internal static void Conn(this string str)
+        {
+            PrintColored(str, "CONN", ConsoleColor.Gray);
+
+            log_conn.Append($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss:ffffff}] {str}");
+        }
+
+        public static void Flush()
+        {
+            log_output.Flush();
+            log_conn.Flush();
+        }
+
         internal static void Save(this string dir)
+        {
+            log_output.Save(dir);
+            log_conn.Save(dir);
+        }
+    }
+
+    internal sealed class LoggerBase
+    {
+        private static readonly Queue<(LoggerBase Context, Action Function)> actions = new Queue<(LoggerBase, Action)>();
+        private readonly StringBuilder log = new StringBuilder();
+        private readonly DateTime startup = DateTime.Now;
+
+        public static Dictionary<string, LoggerBase> Instances { get; } = new Dictionary<string, LoggerBase>();
+
+        public string Name { get; }
+
+        public string Log => log.ToString();
+
+
+        ~LoggerBase()
+        {
+            $"Logger service '{Name}' shutting down.".Info();
+
+            Instances.Remove(Name);
+        }
+
+        static LoggerBase() => ThreadPool.QueueUserWorkItem(delegate
+        {
+            while (true)
+                if (actions.Count > 0)
+                    actions.Dequeue().Function?.Invoke();
+        });
+
+        public LoggerBase(string name)
+        {
+            Instances[this.Name = name] = this;
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                $"Logger service '{name}' started at {startup:yyyy-MM-dd HH:mm:ss.ffffff}".Info();
+
+                Flush();
+            });
+        }
+
+        public void Flush()
+        {
+            while (actions.Count > 0)
+                Thread.Sleep(0); // NOOP
+        }
+
+        public void Clear() => actions.Enqueue((this, () => log.Clear()));
+
+        public void Save(string dir)
         {
             Flush();
 
-            File.WriteAllText($"{dir}\\output-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
+            File.WriteAllText($"{dir}\\{Name}-{startup:yyyy-MM-dd-HH-mm-ss-ffffff}.log", Log);
         }
+
+        public void Append(Func<string> func) => actions.Enqueue((this, () => log.AppendLine(func())));
+
+        public void Append(string value) => Append(() => value);
     }
 
     internal sealed class ForcedShutdown
