@@ -71,7 +71,7 @@ namespace ASC.Server
                 {
                     if (FirewallUtils.IsPortOpen(port))
                     {
-                        $"A serive is already running on port {port}. It will be shut down ...".Warn();
+                        $"A service is already running on port {port}. It will be shut down ...".Warn();
 
                         FirewallUtils.ClosePort(port);
                     }
@@ -87,12 +87,12 @@ namespace ASC.Server
             args => InstallCertificate($"{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher),
             args => {
                 if (containsarg(args, ARG_OFFLINE))
-                    "Server running in offline mode. No internet connection checks will be performed.".Warn();
+                    "Server running in offline mode. No Internet connection checks will be performed.".Warn();
                 else
                     if (!TestConnection())
-                        "No connection to the outside internet could be made. Many of the server's features will only work partially.".Err();
+                        "No connection to the outside Internet could be made. Many of the server's features will only work partially.".Err();
                     else
-                        "A (stable) internet connection could be found. Good.".Ok();
+                        "A (stable) Internet connection could be found. Good.".Ok();
             },
             args => {
                 try
@@ -193,7 +193,7 @@ namespace ASC.Server
             }
         }
 
-#if USE_SERVICEHOST
+#if !USE_SERVICEHOST
 #pragma warning disable RCS1163
 #endif
         /// <summary>
@@ -248,7 +248,6 @@ namespace ASC.Server
 
             return null;
         }
-
 #pragma warning restore
 
         /// <summary>
@@ -352,12 +351,10 @@ namespace ASC.Server
 
                     m.Close();
 
-                    "Logging service shutting down.".Info();
-
-                    ConsoleLogger.Flush();
-
-                    if (!containsarg(args, ARG_NOLOG))
-                        ConsoleLogger.Save(Directory.GetCurrentDirectory());
+                    LoggerBase.StopAll(logger => {
+                        if (!containsarg(args, ARG_NOLOG))
+                            logger.Save(Directory.GetCurrentDirectory());
+                    });
 
                     if (Debugger.IsAttached | (Win32.GetConsoleWindow() != IntPtr.Zero))
                     {
@@ -441,7 +438,8 @@ namespace ASC.Server
                     #endregion
                     #region MAIN LOOP
 
-                    $"Runninng on port {port}. Press `ESC` to exit.".Info();
+                    "Accepting incoming connections.".Ok();
+                    $"Running on port {port}. Press `ESC` to exit.".Info();
 
                     acceptconnections = true;
 
@@ -453,6 +451,7 @@ namespace ASC.Server
                     acceptconnections = false;
 
                     "User-forced shutdown ...".Warn();
+                    "Refusing any further incoming connections.".Warn();
 
                     #endregion
                 }
@@ -639,7 +638,7 @@ namespace ASC.Server
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"An {ex.GetType().FullName} occuered:");
+            sb.AppendLine($"An {ex.GetType().FullName} occurred:");
 
             while (ex != null)
             {
@@ -684,6 +683,7 @@ namespace ASC.Server
     }
 
     internal sealed class LoggerBase
+        : IDisposable
     {
         private static readonly Queue<(LoggerBase Context, Action Function)> actions = new Queue<(LoggerBase, Action)>();
         private readonly StringBuilder log = new StringBuilder();
@@ -696,12 +696,7 @@ namespace ASC.Server
         public string Log => log.ToString();
 
 
-        ~LoggerBase()
-        {
-            $"Logger service '{Name}' shutting down.".Info();
-
-            Instances.Remove(Name);
-        }
+        ~LoggerBase() => Dispose();
 
         static LoggerBase() => ThreadPool.QueueUserWorkItem(delegate
         {
@@ -740,6 +735,30 @@ namespace ASC.Server
         public void Append(Func<string> func) => actions.Enqueue((this, () => log.AppendLine(func())));
 
         public void Append(string value) => Append(() => value);
+
+        public void Dispose()
+        {
+            $"Logger service '{Name}' shut down.".Ok();
+
+            ConsoleLogger.Flush();
+
+            Instances.Remove(Name);
+        }
+
+        internal void Dispose(Action callback)
+        {
+            Dispose();
+            Flush();
+            callback();
+        }
+
+        public static void StopAll(Action<LoggerBase> callback)
+        {
+            "Logging services shutting down...".Info();
+
+            foreach (LoggerBase logger in Instances.Values.ToList())
+                logger.Dispose(() => callback(logger));
+        }
     }
 
     internal sealed class ForcedShutdown

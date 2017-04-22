@@ -1,0 +1,27 @@
+﻿<!--
+   PARAMETERS:
+        §0 - User GUID
+        §1 - User name
+        §2 - Member since
+-->
+<style>
+    #_userprofile {
+        align-content: center;
+        text-align: center;
+    }
+
+    #_userprofile h1 {
+        font-size: 3em;
+    }
+
+    #_userprofile img {
+        border-radius: 40px;
+        border: 1px solid wheat;
+    }
+</style>
+<div id="_userprofile">
+    <img src="res~userimage:§0:D§~image/png" width="512" height="512"/>
+    <h1>§1</h1>
+    <i>§search_membersince§: §2:yyyy-MM-dd HH:mm:ss:ffffff§</i>
+    <span></span>
+</div>

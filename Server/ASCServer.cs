@@ -257,37 +257,66 @@ namespace ASC.Server
         /// <returns>Formatted resource</returns>
         public string FetchResource(string obj, Dictionary<string, object> variables, params object[] args)
         {
+            // conditional pattern:     §{cond_var?true_var:format|false_var:format}§
+            // variable pattern:        §variable:format§
+            // parameter pattern:       §0:format§
+            // parameter pattern:       §0
+
+            const string pat_cond = @"\§\{(?<cond>\w+)\?(?<key1>(\w+|\-))(\:(?<format1>[^§]+))?\|(?<key2>(\w+|\-))(\:(?<format2>[^§]+))?\}\§";
             const string pat_dic = @"\§(?<key>\w+)(\:(?<format>[^§]+))?\§";
-            const string pat_par = @"\§([0-9]+)\:([^§]+)§";
-            const string pat_cnt = @"\§([0-9]+)";
+            const string pat_par = @"\§(?<num>[0-9]+)\:(?<format>[^§]+)§";
+            const string pat_cnt = @"\§(?<num>[0-9]+)";
             List<object> values = new List<object>();
             int rcount = 0;
 
             obj = obj.Replace("{", "{{");
             obj = obj.Replace("}", "}}");
 
-            rcount += Regex.Matches(obj, pat_par).Count;
-            rcount += Regex.Matches(obj, pat_cnt).Count;
+            rcount = Regex.Matches(obj, pat_par).Cast<Match>()
+                                                .Union(Regex.Matches(obj, pat_cnt).Cast<Match>())
+                                                .Select(m => int.Parse(m.Groups["num"].ToString()))
+                                                .Union(new int[] { 0 })
+                                                .Distinct()
+                                                .Max();
 
-            obj = Regex.Replace(obj, pat_par, "{$1:$2}");
-            obj = Regex.Replace(obj, pat_cnt, "{$1}");
+            obj = Regex.Replace(obj, pat_par, "{${num}:${format}}");
+            obj = Regex.Replace(obj, pat_cnt, "{${num}}");
+
+            while (regex(obj, pat_cond, out Match m))
+                SplitMerge(m, delegate
+                {
+                    string cond = m.Groups["cond"].ToString();
+                    bool bcond = variables?.ContainsKey(cond) ?? false ? bool.TryParse(variables?[cond].ToString(), out bcond) : false;
+                    int index = bcond ? 1 : 2;
+
+                    return (m.Groups["key" + index].ToString(), m.Groups["format" + index]?.ToString() ?? "");
+                });
 
             while (regex(obj, pat_dic, out Match m))
+                SplitMerge(m, delegate
+                {
+                    string key = m.Groups["key"].ToString();
+                    string format = m.Groups["format"]?.ToString() ?? "";
+
+                    return (key, format);
+                });
+
+            return string.Format(obj, args.Concat(values).ToArray());
+
+
+            void SplitMerge(Match m, Func<(string key, string format)> callback)
             {
                 string head = obj.Substring(0, m.Index);
                 string tail = obj.Substring(m.Index + m.Length);
-                string key = m.Groups["key"].ToString();
-                string format = m.Groups["format"]?.ToString() ?? "";
+                (string key, string format) = callback();
 
                 if (format.Length > 0)
                     format = ':' + format;
 
-                values.Add(variables?.ContainsKey(key) ?? false ? variables?[key] : null);
+                values.Add(variables?.ContainsKey(key) ?? false ? variables?[key] : format = "");
 
                 obj = $"{head}{{{rcount++}{format}}}{tail}";
             }
-
-            return string.Format(obj, args.Concat(values).ToArray());
         }
 
         /// <summary>
@@ -363,7 +392,7 @@ namespace ASC.Server
 
             initlang();
 
-            if (regex(path, @"res\~(?<res>.+)\~(?<type>[\w\-\/\-\+]+)\b?", out Match m))
+            if (regex(path, @"(.*[\\\/])?res\~(?<res>.+)\~(?<type>[\w\-\/\-\+]+)", out Match m))
             {
                 string resource = m.Groups["res"].ToString();
 
@@ -376,37 +405,47 @@ namespace ASC.Server
                     $"Processing resource '{resource}' with MIME-type '{response.ContentType}'...".Msg();
 
                     foreach (Func<HTTPResponse> f in new Func<HTTPResponse>[] {
-                    () => File.ReadAllBytes($"{Directory.GetCurrentDirectory()}\\Resources\\{resource}"),
-                    () => Resources.ResourceManager.GetString(resource),
-                    () => Resources.ResourceManager.GetStream(resource).ToBytes(),
-                    () =>
-                    {
-                        object obj = typeof(Resources).GetProperty(resource, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+                        () => {
+                            string dir = Directory.GetCurrentDirectory() + "\\";
+                            string respath = $"{dir}\\Resources\\{resource}";
 
-                        switch (obj)
+                            if (regex(resource, @"userimage\:\{?(?<guid>[^\{\}]+)\}?", out m))
+                            {
+                                respath = $"{dir}{DIR_PROFILEIMAGES}\\{{{m.Groups["guid"]}}}.png";
+
+                                if (!File.Exists(respath))
+                                    return (Resources.profile_default, ImageFormat.Png);
+                            }
+                            else if (regex(resource, @"media\:(?<id>.+)", out m))
+                                ; // TODO
+
+                            return File.ReadAllBytes(respath);
+                        },
+                        () => Resources.ResourceManager.GetString(resource),
+                        () => Resources.ResourceManager.GetStream(resource).ToBytes(),
+                        () =>
                         {
-                            case Icon ico:
-                                using (MemoryStream ms = new MemoryStream())
-                                {
-                                    ico.Save(ms);
+                            object obj = typeof(Resources).GetProperty(resource, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
 
-                                    return ms.ToArray();
-                                }
-                            case Image i:
-                                using (MemoryStream ms = new MemoryStream())
-                                {
-                                    i.Save(ms, ImageFormat.Png);
+                            switch (obj)
+                            {
+                                case Icon ico:
+                                    using (MemoryStream ms = new MemoryStream())
+                                    {
+                                        ico.Save(ms);
 
-                                    return ms.ToArray();
-                                }
-                            case Stream s:
-                                return s.ToBytes();
-                            default:
-                                return obj as byte[];
-                        }
-                    },
-                    () => Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}").ToBytes(),
-                })
+                                        return ms.ToArray();
+                                    }
+                                case Image i:
+                                    return (i, ImageFormat.Png);
+                                case Stream s:
+                                    return s.ToBytes();
+                                default:
+                                    return obj as byte[];
+                            }
+                        },
+                        () => Assembly.GetExecutingAssembly().GetManifestResourceStream($"Resources.{resource}").ToBytes(),
+                    })
                         try
                         {
                             HTTPResponse resp = f();
@@ -420,13 +459,12 @@ namespace ASC.Server
                 }
                 catch
                 {
+                    $"Resource '{resource}' not found.".Warn();
+
+                    setstyles();
+
+                    return SendError(request, response, vars, _404, $"The resource '{resource}' could not be found.");
                 }
-
-                $"Resource '{resource}' not found.".Warn();
-
-                setstyles();
-
-                return SendError(request, response, vars, _404, $"The resource '{resource}' could not be found.");
             }
 
             #endregion
@@ -439,13 +477,24 @@ namespace ASC.Server
                 return SendOperationResponse(error, vars, request, response, geoip, ref session, out user);
 
             #endregion
+            #region GEOIP HANDLING
+
+            InitLocation(geoip, ref vars);
+            setstyles();
+
+            #endregion
             #region SESSION + AUTHENTIFICATION VARIABLES
+
+            bool successful_login = false;
+
+            if (contains(request, "hash", out string hash) && contains(request, "id", out string id))
+                verify(request, tSQL, id, hash, vars["location"].ToString(), out session);
 
             if ((user = getsessionuser()) != null)
             {
                 DBUserAuthentification auth = tSQL.GetAuth(user.ID);
 
-                tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, vars["location"].ToString(), out session); // update login
+                successful_login = tSQL.Login(user.ID, auth.Hash, request.UserHostAddress, request.UserAgent, vars["location"].ToString(), out session); // update login
 
                 auth.Session = session;
 
@@ -465,16 +514,28 @@ namespace ASC.Server
             }
 
             #endregion
-            #region GEOIP HANDLING
-
-            InitLocation(geoip, ref vars);
-            setstyles();
-
-            #endregion
             #region 
 
-            if (regex(path, @"", out _))
-                ; // TODO : user profile 
+            if (regex(path.Replace('\\', '/'), @"^\/?user\/(?<name>\w+)\b?", out m))
+                if (successful_login)
+                {
+                    DBUser puser = null;
+
+                    try
+                    {
+                        puser = tSQL.GetUser(m.Groups["name"].ToString());
+                    }
+                    catch
+                    {
+                    }
+
+                    if (puser == null)
+                        return SendError(request, response, vars, _403, vars["error_userprofile_notfound"].ToString());
+
+                    vars["inner"] = FetchResource(Resources.user, vars, puser.UUID, puser.Name, puser.MemberSince); // TODO
+                }
+                else
+                    return SendError(request, response, vars, _403, vars["error_userprofile_denied"].ToString());
 
             #endregion
 
@@ -497,9 +558,12 @@ namespace ASC.Server
             }
             DBUser getsessionuser()
             {
-                Cookie sessc = request.Cookies["_sess"];
+                string sessc = request.Cookies["_sess"]?.Value ?? "";
 
-                return tSQL.VerifySession(session = sessc?.Value ?? "") ? tSQL.GetUserBySession(session) : null;
+                if (sessc.Length > 0)
+                    session = sessc;
+
+                return tSQL.VerifySession(session) ? tSQL.GetUserBySession(session) : null;
             }
             void setstyles()
             {
@@ -648,6 +712,10 @@ namespace ASC.Server
             vars["error_message"] = vars[$"error{code}"].ToString();
             vars["error_submessage"] = msg ?? "";
             vars["inner"] = FetchResource(Resources.error, vars);
+            vars["main_page"] = "true"; // prevent redirect
+
+            vars["pre_script"] = FetchResource(Resources.pre_script, vars); // update
+            vars["post_script"] = FetchResource(Resources.post_script, vars); // update
 
             return FetchResource(Resources.frame, vars);
         }

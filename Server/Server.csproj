@@ -113,6 +113,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\user.html" />
     <Content Include="Resources\frame.compact.html" />
     <Content Include="Resources\ico_de.png" />
     <Content Include="Resources\ico_en.png" />

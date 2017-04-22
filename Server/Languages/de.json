@@ -35,7 +35,9 @@
       "session": "Ihre Sitzung ist entweder ungültig oder aufgrund von zu langer Inaktivität abgelaufen.",
       "offline": "Die Verbindung zum Server wurde verloren.",
       "logout": "Sie werden aus Sicherheitsgründen abgemeldet."
-    }
+    },
+    "userprofile_denied": "Sie verfügen nicht über die benötigten Berechtigungen, um das Benutzerprofil einzusehen.",
+    "userprofile_notfound": "Das angeforderte Profil existiert nicht."
   },
   "unsafe": "Diese Verbindung ist unverschlüsselt. Bitte verbinden Sie sich mit SSL, um eine sichere Verbindung zu gewährleisten.",
   "login": {

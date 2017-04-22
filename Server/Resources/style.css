@@ -3,6 +3,19 @@
 @import url('https://fonts.googleapis.com/css?family=UnifrakturCook:700');
 
 
+* {
+    -moz-osx-font-smoothing: grayscale !important;
+     -webkit-font-smoothing: antialiased !important;
+
+    text-rendering: optimizeLegibility !important;
+
+    -webkit-text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+       -moz-text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+    
+    font-smooth: always;
+}
+
 ::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
     background-color: rgba(245, 245, 245, 0.21);
@@ -96,6 +109,20 @@ input[type=submit]:hover {
 body {
     background-color: #222;
     color: wheat;
+}
+
+body.compact,
+body.compact #content {
+    align-content: center;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+body.compact,
+body.compact #main,
+body.compact #content {
+    background: none transparent !important;
 }
 
 a, input, button, body, #main {
@@ -238,10 +265,15 @@ a, input, button, body, #main {
     text-decoration: none;
 }
 
-#main {
+body:not(.compact) #main {
     padding: 10px 10px 10px 10px;
     width: calc(100% - 26px);
     min-width: 800px;
+}
+
+body.compact #main {
+    min-width: 512px;
+    width: 512px;
 }
 
 #lang_change_bg {

@@ -12,6 +12,8 @@ using System;
 using Newtonsoft.Json;
 
 using static ASC.Server.Program;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace ASC.Server
 {
@@ -236,5 +238,18 @@ namespace ASC.Server
         /// </summary>
         /// <param name="text">UTF-16 strings</param>
         public static implicit operator HTTPResponse(string text) => Codepage.GetBytes(text);
+        /// <summary>
+        /// Converts the given image to an HTTP-response
+        /// </summary>
+        /// <param name="img">Image</param>
+        public static implicit operator HTTPResponse((Image Image, ImageFormat Format) img)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                img.Image.Save(ms, img.Format);
+
+                return ms.ToArray();
+            }
+        }
     }
 }

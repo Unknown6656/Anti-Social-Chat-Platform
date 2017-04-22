@@ -188,6 +188,13 @@ namespace ASC.Server
         public DBUser GetUser(Guid uuid) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE CONVERT(NVARCHAR(255), [UUID]) = N'{uuid:D}'").First();
 
         /// <summary>
+        /// Returns the user associated with the given user name
+        /// </summary>
+        /// <param name="name">User name</param>
+        /// <returns>User</returns>
+        public DBUser GetUser(string name) => Execute<DBUser>($"SELECT * FROM {USERS} WHERE UPPER([Name]) = '{SQLEncode(name.ToUpper())}'").First();
+
+        /// <summary>
         /// Searches for the given user name and returns a list of the first 20 search results 
         /// </summary>
         /// <param name="name">Search string</param>
@@ -267,7 +274,7 @@ namespace ASC.Server
             }
         }
 
-        internal bool CanChangeName(string newname) => !Execute($"SELECT 0 FROM {USERS} WHERE UPPER([Name]) = '{newname?.ToUpper() ?? ""}'").Any();
+        internal bool CanChangeName(string newname) => !Execute($"SELECT 0 FROM {USERS} WHERE UPPER([Name]) = '{SQLEncode(newname?.ToUpper() ?? "")}'").Any();
 
         internal bool ValidateUser(DBUser user) => ValidateUserName(user?.Name) &&
                                                    regex(user?.Status ?? "", @"^[^\'\""`´]+$", out _) &&
@@ -299,10 +306,10 @@ namespace ASC.Server
         /// </summary>
         /// <param name="session">Session string</param>
         /// <returns>Verification result</returns>
-        public bool VerifySession(string session) => ValidateHash(session) ? Execute($@"SELECT 1
-                                                                                        FROM {UAUTH}
-                                                                                        WHERE UPPER([Session]) = '{session.ToUpper()}'
-                                                                                        AND [LastLogin] > {GetSQLString(DateTime.Now.AddMinutes(-5))}").Any() : false;
+        public bool VerifySession(string session) => session == null ? false : ValidateHash(session) ? Execute($@"SELECT 1
+                                                                                                                  FROM {UAUTH}
+                                                                                                                  WHERE UPPER([Session]) = '{session.ToUpper()}'
+                                                                                                                  AND [LastLogin] > {GetSQLString(DateTime.Now.AddMinutes(-5))}").Any() : false;
 
         /// <summary>
         /// Verifies whether the given user credentials are correct

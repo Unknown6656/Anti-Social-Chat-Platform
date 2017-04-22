@@ -35,7 +35,9 @@
       "session": "Votre session est invalide ou a expiré en raison de l&quot;inactivité.",
       "offline": "La connexion au serveur a été perdue.",
       "logout": "Vous serez déconnecté pour des raisons de sécurité."
-    }
+    },
+    "userprofile_denied": "Vous n'avez pas les autorisations requises pour accéder à la page de profil de cet utilisateur.",
+    "userprofile_notfound": "La page de profil de cet utilisateur n'existe pas."
   },
   "unsafe": "Votre connexion n&quot;est pas sécurisée. Envisager de se connecter à ce site via SSL.",
   "login": {

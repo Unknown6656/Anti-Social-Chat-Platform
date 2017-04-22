@@ -444,5 +444,28 @@ namespace ASC.Server.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &lt;style&gt;
+        ///&lt;/style&gt;
+        ///&lt;div id=&quot;_chat&quot;&gt;
+        ///    User logged in with:
+        ///    &lt;br/&gt;
+        ///    &lt;pre&gt;§user§&lt;/pre&gt;
+        ///    &lt;br /&gt;
+        ///    and session:
+        ///    &lt;br /&gt;
+        ///    &lt;pre&gt;§user_auth§&lt;/pre&gt;
+        ///    &lt;br /&gt;
+        ///    and location:
+        ///    &lt;br /&gt;
+        ///    &lt;pre&gt;§location§&lt;/pre&gt;
+        ///&lt;/div&gt;.
+        /// </summary>
+        internal static string user {
+            get {
+                return ResourceManager.GetString("user", resourceCulture);
+            }
+        }
     }
 }

@@ -35,7 +35,9 @@
       "session": "Your session is either invalid or has expired due to inactivity.",
       "offline": "The connection to the server has been lost.",
       "logout": "You will be logged out for security reasons."
-    }
+    },
+    "userprofile_denied": "You do not have the permissions required to access the profile page of this user.",
+    "userprofile_notfound": "The profile page of this user does not exist."
   },
   "unsafe": "Your connection is not safe. Consider connecting to this website via SSL.",
   "login": {
@@ -61,10 +63,10 @@
       "button": "Register",
       "suggest": "You do not have an account?",
       "clickhere": "Click here to register one.",
-      "username": "Your username",
+      "username": "Your user name",
       "repeatpw": "Repeat your password",
       "missingcaptcha": "You forgot to solve the Captcha during the registration.",
-      "missingparams": "The username and password are needed for a registration.",
+      "missingparams": "The user name and password are needed for a registration.",
       "pwnonequal": "Both given passwords must be equal.",
       "invalname": "The given name is either not valid or already in use.",
       "fillcaptcha": "The Captcha must be solved.",
