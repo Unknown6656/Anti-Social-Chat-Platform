@@ -3,6 +3,7 @@
         §0 - User GUID
         §1 - User name
         §2 - Member since
+        §3 - Status
 -->
 <style>
     #_userprofile {
@@ -18,10 +19,44 @@
         border-radius: 40px;
         border: 1px solid wheat;
     }
+
+    #_userprofile i {
+        margin-top: -40px;
+        position: absolute;
+        margin-left: -50%;
+        width: 100%;
+    }
+
+    blockquote {
+        background: rgba(132, 120, 102, 0.37);
+        border-left: 10px solid #888;
+        padding: 0.5em 10px;
+        text-align: left;
+        quotes: "\201C""\201D""\2018""\2019";
+    }
+
+    blockquote:before {
+        vertical-align: -0.4em;
+        margin-right: 0.25em;
+        line-height: 0.1em;
+        font-size: 4em;
+        content: open-quote;
+        color: #888;
+    }
+
+    blockquote p {
+        display: inline;
+    }
 </style>
 <div id="_userprofile">
     <img src="res~userimage:§0:D§~image/png" width="512" height="512"/>
     <h1>§1</h1>
-    <i>§search_membersince§: §2:yyyy-MM-dd HH:mm:ss:ffffff§</i>
-    <span></span>
+    <i>§search_membersince§: <code>§2:yyyy-MM-dd HH:mm:ss:ffffff§</code></i>
+    <p>
+        §profile_guid§: <code>{§0}</code>
+    </p>
+    <p>
+        §profile_status§:<br />
+        <blockquote>§3</blockquote>
+    </p>
 </div>

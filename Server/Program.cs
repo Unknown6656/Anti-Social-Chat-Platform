@@ -58,13 +58,15 @@ namespace ASC.Server
 
 
         internal static Action<string[]>[] StartupTasks { get; } = new Action<string[]>[] {
-            args => {
+            args =>
+            {
                 if (File.Exists(Win32.RECAPTCHA_SECRET) && ((recaptcha_private = File.ReadAllText(Win32.RECAPTCHA_SECRET)?.Trim() ?? recaptcha_private ?? "").Length > 0))
                     $"Loaded the ReCaptcha private key '{recaptcha_private}'".Ok();
                 else
                     "No ReCaptcha private key could be found, meaning that the register-function will not be available.".Err();
             },
-            args => {
+            args =>
+            {
                 "Setting firewall rules ...".Msg();
 
                 foreach (int port in new int[] { Win32.PORT, Win32.PORT + 1})
@@ -85,7 +87,8 @@ namespace ASC.Server
             },
             args => InstallCertificate($"{nameof(Properties.Resources.Unknown6656)}.cer", StoreName.Root),
             args => InstallCertificate($"{nameof(Properties.Resources.ASC)}.cer", StoreName.TrustedPublisher),
-            args => {
+            args =>
+            {
                 if (containsarg(args, ARG_OFFLINE))
                     "Server running in offline mode. No Internet connection checks will be performed.".Warn();
                 else
@@ -94,7 +97,8 @@ namespace ASC.Server
                     else
                         "A (stable) Internet connection could be found. Good.".Ok();
             },
-            args => {
+            args =>
+            {
                 try
                 {
                     $"SQL Server v{Database.DatabaseHelper.SQLVersion} found.".Ok();
@@ -106,7 +110,8 @@ namespace ASC.Server
                     throw null;
                 }
             },
-            args => {
+            args =>
+            {
                 HostNames.Add(Dns.GetHostName());
                 HostNames.AddRange(Dns.GetHostAddresses(HostNames[0]).Select(_ => _.ToString()));
 
@@ -129,7 +134,8 @@ namespace ASC.Server
                 foreach (string host in HostNames)
                     $"Server resolved to '{host}'.".Msg();
             },
-            args => {
+            args =>
+            {
                 foreach (string dir in new string [] { DIR_DATA, DIR_PROFILEIMAGES })
                     if (!Directory.Exists(dir))
                     {
@@ -138,6 +144,9 @@ namespace ASC.Server
                         Directory.CreateDirectory(dir);
                     }
             },
+#if USE_SERVICEHOST
+            args => "Running as service".Ok(),
+#endif
         };
 
 

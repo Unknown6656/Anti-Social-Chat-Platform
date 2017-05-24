@@ -87,6 +87,10 @@
     "locked": "Blocked",
     "login": "Login with this GUID"
   },
+  "profile": {
+    "status": "Status",
+    "guid": "GUID"
+  },
   "global": {
     "title": "Anti-Social Chat Platform",
     "descr": "This is the official anti-social chat platform",

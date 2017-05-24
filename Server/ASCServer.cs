@@ -260,27 +260,37 @@ namespace ASC.Server
             // conditional pattern:     §{cond_var?true_var:format|false_var:format}§
             // variable pattern:        §variable:format§
             // parameter pattern:       §0:format§
-            // parameter pattern:       §0
+            //                          §0
 
             const string pat_cond = @"\§\{(?<cond>\w+)\?(?<key1>(\w+|\-))(\:(?<format1>[^§]+))?\|(?<key2>(\w+|\-))(\:(?<format2>[^§]+))?\}\§";
             const string pat_dic = @"\§(?<key>\w+)(\:(?<format>[^§]+))?\§";
-            const string pat_par = @"\§(?<num>[0-9]+)\:(?<format>[^§]+)§";
-            const string pat_cnt = @"\§(?<num>[0-9]+)";
+            const string pat_par = @"\§(?<num>[0-9]+)(\:(?<format>[^§]+)§)?";
             List<object> values = new List<object>();
+            IEnumerable<Match> matches;
             int rcount = 0;
 
             obj = obj.Replace("{", "{{");
             obj = obj.Replace("}", "}}");
 
-            rcount = Regex.Matches(obj, pat_par).Cast<Match>()
-                                                .Union(Regex.Matches(obj, pat_cnt).Cast<Match>())
-                                                .Select(m => int.Parse(m.Groups["num"].ToString()))
-                                                .Union(new int[] { 0 })
-                                                .Distinct()
-                                                .Max();
+            rcount = (matches = Regex.Matches(obj, pat_par).Cast<Match>()
+                                                           .OrderByDescending(m => m.Index))
+                                                           .Select(m => int.Parse(m.Groups["num"].ToString()))
+                                                           .Union(new int[] { 0 })
+                                                           .Distinct()
+                                                           .Max();
 
-            obj = Regex.Replace(obj, pat_par, "{${num}:${format}}");
-            obj = Regex.Replace(obj, pat_cnt, "{${num}}");
+            foreach (Match m in matches)
+            {
+                string repl = $"{{{m.Groups["num"]}}}";
+
+                if (m.Groups["format"].Length > 0)
+                    repl = $"{{{m.Groups["num"]}:{m.Groups["format"]}}}";
+
+                obj = Replace(obj, m.Index, m.Length, repl);
+            }
+
+            if (matches.Any())
+                ++rcount;
 
             while (regex(obj, pat_cond, out Match m))
                 SplitMerge(m, delegate
@@ -301,8 +311,9 @@ namespace ASC.Server
                     return (key, format);
                 });
 
-            return string.Format(obj, args.Concat(values).ToArray());
+            args = args.Concat(values).ToArray();
 
+            return string.Format(obj, args);
 
             void SplitMerge(Match m, Func<(string key, string format)> callback)
             {
@@ -317,16 +328,22 @@ namespace ASC.Server
 
                 obj = $"{head}{{{rcount++}{format}}}{tail}";
             }
+            string Replace(string s, int index, int length, string replacement) => new StringBuilder()
+                                                                                   .Append(s.Substring(0, index))
+                                                                                   .Append(replacement)
+                                                                                   .Append(s.Substring(index + length))
+                                                                                   .ToString();
         }
 
         /// <summary>
         /// Processes the given HTTP listener request and writes the processing result into the given HTTP listener response
         /// </summary>
         /// <param name="request">HTTP listener request</param>
+        /// <param name="clientdata">The data send by the client</param>
         /// <param name="response">HTTP listener response</param>
         /// <param name="geoip">GeoIP fetcher task</param>
         /// <returns>HTTP response data</returns>
-        public HTTPResponse SendResponse(HttpListenerRequest request, HttpListenerResponse response, Task<GeoIPResult> geoip)
+        public HTTPResponse SendResponse(HttpListenerRequest request, byte[] clientdata, HttpListenerResponse response, Task<GeoIPResult> geoip)
         {
             #region INIT
 
@@ -343,8 +360,10 @@ namespace ASC.Server
                 Raw = dt_req,
                 SinceUnix = new DateTimeOffset(dt_req).ToUnixTimeMilliseconds(),
             };
+            bool _hasinitlang = false;
 
             response.Headers[HttpResponseHeader.Server] = ServerString;
+            response.Headers[HttpResponseHeader.Connection] = "keep-alive";
 
             Stopwatch sw = new Stopwatch();
 
@@ -364,6 +383,7 @@ namespace ASC.Server
             #endregion
             #region ENVIRONMENT VARIABLES
 
+            vars["location"] = "unknown";
             vars["lang_avail"] = string.Join(", ", from lp in LanguagePacks.Keys select $"\"{lp}\"");
             vars["mobile"] = ToJSbool(mobile);
             vars["url_path"] = path;
@@ -474,7 +494,13 @@ namespace ASC.Server
             DBUser user = null;
 
             if (regex(path, @"^[\\\/]?api\.json$", out _))
-                return SendOperationResponse(error, vars, request, response, geoip, ref session, out user);
+            {
+                HTTPResponse resp = SendOperationResponse(error, vars, request, response, geoip, ref session, out user);
+#if DEBUG
+                $"API response: {resp.Text}".Info();
+#endif
+                return resp;
+            }
 
             #endregion
             #region GEOIP HANDLING
@@ -514,7 +540,7 @@ namespace ASC.Server
             }
 
             #endregion
-            #region 
+            #region USER PROFILE
 
             if (regex(path.Replace('\\', '/'), @"^\/?user\/(?<name>\w+)\b?", out m))
                 if (successful_login)
@@ -532,7 +558,7 @@ namespace ASC.Server
                     if (puser == null)
                         return SendError(request, response, vars, _403, vars["error_userprofile_notfound"].ToString());
 
-                    vars["inner"] = FetchResource(Resources.user, vars, puser.UUID, puser.Name, puser.MemberSince); // TODO
+                    vars["inner"] = FetchResource(Resources.user, vars, puser.UUID, puser.Name, puser.MemberSince, puser.Status); // TODO
                 }
                 else
                     return SendError(request, response, vars, _403, vars["error_userprofile_denied"].ToString());
@@ -584,6 +610,11 @@ namespace ASC.Server
             }
             void initlang()
             {
+                if (_hasinitlang)
+                    return;
+                else
+                    _hasinitlang = true;
+
                 if (contains(request, "lang", out string lang))
                     lang = lang?.ToLower();
                 else
@@ -592,9 +623,11 @@ namespace ASC.Server
 
                     if (langc?.Value?.Length > 0)
                         lang = langc.Value;
+                    else
+                        lang = request.UserLanguages.Select(_ => _.ToLower()).Intersect(LanguagePacks.Keys).FirstOrDefault();
                 }
 
-                lang = lang ?? "en";
+                lang = (lang ?? "en").ToLower();
 
                 if (!LanguagePacks.ContainsKey(lang))
                     lang = (from lraw in request.UserLanguages
@@ -641,7 +674,7 @@ namespace ASC.Server
                     if (ascop.RequiresLocation || (ascop.Privilege > ASCOperationPrivilege.Regular))
                         InitLocation(geoip, ref vars);
 
-                    string loc = values.ContainsKey("location") ? values["location"] : null;
+                    string loc = values["location"] = vars["location"].ToString();
 
                     if (ascop.Privilege > ASCOperationPrivilege.Regular)
                     {
@@ -726,7 +759,7 @@ namespace ASC.Server
 
             GeoIPResult location = geoip.Result;
 
-            vars["location"] = location == null ? "" : $"{location.postal} - {location.city},\n{location.state},\n{location.country_code} - {location.country_name}\n({location.latitude}, {location.longitude})";
+            vars["location"] = location == null ? "unknown" : $"{location.postal} - {location.city},\n{location.state},\n{location.country_code} - {location.country_name}\n({location.latitude}, {location.longitude})";
         }
 
         private void SetStatusCode(HttpListenerResponse resp, StatusCode code)
@@ -913,6 +946,21 @@ namespace ASC.Server
     /// </summary>
     public sealed class GeoIPResult
     {
+        /// <summary>
+        /// Returns the default GeoIP query result
+        /// </summary>
+        public static GeoIPResult Default { get; } = new GeoIPResult
+        {
+            country_code = "--",
+            country_name = "[unknown]",
+            city = "[unknown]",
+            postal = "-----",
+            latitude = null,
+            longitude = null,
+            IPv4 = "---.---.---.---",
+            state = "[unknown]",
+        };
+
         /// <summary>
         /// The country code
         /// </summary>

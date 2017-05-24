@@ -21,9 +21,10 @@ namespace ASC.Server
     /// Represents a specialized HTTP request handler delegate method
     /// </summary>
     /// <param name="request">HTTP request data</param>
+    /// <param name="clientdata">The data send by the client</param>
     /// <param name="response">HTTP response data</param>
     /// <param name="geoip">GeoIP task</param>
-    public delegate HTTPResponse HTTPRequestHandler(HttpListenerRequest request, HttpListenerResponse response, Task<GeoIPResult> geoip);
+    public delegate HTTPResponse HTTPRequestHandler(HttpListenerRequest request, byte[] clientdata, HttpListenerResponse response, Task<GeoIPResult> geoip);
 
     /// <summary>
     /// Represents an HTTP server
@@ -123,16 +124,21 @@ namespace ASC.Server
 
             try
             {
-                $"'{ctx.Request.RemoteEndPoint}' requests '{ctx.Request.LocalEndPoint}{ctx.Request.RawUrl}' ...".Conn();
+                // some weird shit double escaping curly brackets ... wtf, roslyn!?
+                string sender = $"{{{$"{ctx.Request.RequestTraceIdentifier:D}"}}}/{ctx.Request.RemoteEndPoint}";
+
+                $"'{sender}' requests '{ctx.Request.LocalEndPoint}{ctx.Request.RawUrl}' ...".Conn();
 
                 Task<GeoIPResult> geoip = Task<GeoIPResult>.Run(() => GetGeoIPResult(ctx.Request.RemoteEndPoint));
-                HTTPResponse resp = _rfunc(ctx.Request, ctx.Response, geoip);
+                byte[] content = ctx.Request.InputStream.ToBytes();
+
+                HTTPResponse resp = _rfunc(ctx.Request, content, ctx.Response, geoip);
 
                 ctx.Response.ContentEncoding = HTTPResponse.Codepage;
                 ctx.Response.ContentLength64 = resp.Length;
                 ctx.Response.OutputStream.Write(resp.Bytes ?? new byte[0], 0, resp.Length);
 
-                $"Response sent to '{ctx.Request.RemoteEndPoint}' with the status code '{ctx.Response?.StatusCode ?? 500} - {ctx.Response?.StatusDescription ?? "Internal error"}'".Msg();
+                $"Response sent to '{sender}' with the status code '{ctx.Response?.StatusCode ?? 500} - {ctx.Response?.StatusDescription ?? "Internal error"}'".Msg();
 
                 TaskKiller(geoip);
             }
@@ -190,7 +196,14 @@ namespace ASC.Server
             if (regex(res, @"^callback\s*\((?<content>.+)\)", out m))
                 res = m.Groups["content"].ToString();
 
-            return JsonConvert.DeserializeObject<GeoIPResult>(res);
+            try
+            {
+                return JsonConvert.DeserializeObject<GeoIPResult>(res);
+            }
+            catch
+            {
+                return GeoIPResult.Default;
+            }
         }
 
         // a task will be launched to wait for the termination of an existing async task .... now that's meta.
