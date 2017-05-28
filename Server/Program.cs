@@ -40,6 +40,23 @@ namespace ASC.Server
         internal const string DIR_DATA = @".\data";
         internal const string DIR_PROFILEIMAGES = DIR_DATA + @"\profiles";
 
+        internal const string LOCALHOST = "127.0.0.1";
+
+        internal static readonly string GREETING_MESSAGE = $@"
+========================== Anti-Social Chat Platform ==========================
+
+                           d8888  .d8888b.   .d8888b.  
+                          d88888 d88P  Y88b d88P  Y88b 
+                         d88P888 Y88b.      888    888 
+                        d88P 888  ""Y888b.   888        
+                       d88P  888     ""Y88b. 888        
+                      d88P   888       ""888 888    888 
+                     d8888888888 Y88b  d88P Y88b  d88P
+                    d88P     888  ""Y8888P""   ""Y8888P""
+
+                      Copyright © Unknown6656, 2016-{Math.Max(DateTime.Now.Year, 2017)}
+                       Works on my machine (confirmed!)
+===============================================================================";
         internal static readonly string[] PingStations = @"8.8.8.8,
                                                            8.8.4.4,
                                                            google.com,
@@ -266,6 +283,8 @@ namespace ASC.Server
         /// <returns>Return code</returns>
         public static int Main(string[] args)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(GREETING_MESSAGE);
 #if DEBUG
             AppDomain.MonitoringIsEnabled = true;
 #endif
@@ -445,6 +464,32 @@ namespace ASC.Server
                     Authentification.Start();
 
                     #endregion
+                    #region LOCATION UPDATER
+
+                    $"Starting the location caching service with a cache-time of {HTTPServer.LOCATION_CACHE_TIME / 1000f:F1} seconds ...".Msg();
+
+                    HTTPServer._locuptmr = new Timer(delegate
+                    {
+                        "Updating the location cache ...".Msg();
+
+                        (string IP, GeoIPResult Result)[] ips;
+
+                        lock (HTTPServer._loccache)
+                            ips = (from string ip in HTTPServer._loccache.Keys
+                                   select (ip, null as GeoIPResult)).ToArray();
+
+                        Parallel.For(0, ips.Length, i => ips[i].Result = HTTPServer.GetGeoIPResult(ips[i].IP, true));
+
+                        lock (HTTPServer._loccache)
+                            foreach (var e in ips)
+                                HTTPServer._loccache[e.IP] = e.Result;
+
+                        $"Location cache build with {ips.Length} entries.".Msg();
+                    }, HTTPServer._loccache, 0, HTTPServer.LOCATION_CACHE_TIME);
+
+                    "Location caching service started.".Ok();
+
+                    #endregion
                     #region MAIN LOOP
 
                     "Accepting incoming connections.".Ok();
@@ -477,6 +522,11 @@ namespace ASC.Server
                     ASCServer.DeleteTemporaryUsers(database);
 
                     "Disconnecting from the database ...".Msg();
+
+                    HTTPServer._locuptmr.Dispose();
+                    HTTPServer._locuptmr = null;
+
+                    "Location caching service stopped.".Ok();
 
                     #endregion
                 }
@@ -583,7 +633,7 @@ namespace ASC.Server
         internal const string RECAPTCHA_SECRET = "./recaptcha.key";
         internal const string GUID = "208b519d-d6b8-44df-9bba-a5abfddb773a";
         internal const string MUTEX = "ASC_server_" + GUID;
-        internal const string NAMESPACE_URI = "http://0.0.0.0:8081";
+        internal const string NAMESPACE_URI = "http://" + Program.LOCALHOST + ":8081";
         internal const int PORT = 8080;
 
         internal static readonly string sys32 = $@"{Environment.GetFolderPath(Environment.SpecialFolder.Windows)}\system32";

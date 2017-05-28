@@ -113,6 +113,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\element-queries.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\resize-sensor.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\user.html" />
     <Content Include="Resources\frame.compact.html" />
     <Content Include="Resources\ico_de.png" />
@@ -121,13 +127,17 @@
     <Content Include="Resources\ico_it.png" />
     <Content Include="Resources\ico_ru.png" />
     <Content Include="Resources\ico_zh.png" />
-    <Content Include="Resources\jquery.cookie.js" />
+    <Content Include="Resources\jquery.cookie.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\chat.html" />
     <Content Include="Resources\login.html" />
     <Content Include="Resources\pre_script.js" />
     <Content Include="Resources\post_script.js" />
     <Content Include="Resources\profile_default.png" />
-    <Content Include="Resources\sha512.js" />
+    <Content Include="Resources\sha512.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\style.desktop.css" />
     <Content Include="Resources\style.mobile.css" />
     <Content Include="SQLScripts\Cleanup.sql">
@@ -228,7 +238,9 @@
     <Content Include="Resources\error.html" />
     <Content Include="Resources\favicon.ico" />
     <Content Include="Resources\frame.html" />
-    <Content Include="Resources\jquery-3.1.1.min.js" />
+    <Content Include="Resources\jquery-3.1.1.min.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\style.css" />
   </ItemGroup>
   <ItemGroup>

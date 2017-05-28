@@ -1,6 +1,43 @@
 ﻿<style>
+    #_chat,
+    #_lside,
+    #_entrybox {
+        border-style: solid;
+        border-color: #999;
+        border-width: 0px;
+        position: fixed;
+        padding: 5px;
+    }
+
+    #_lside {
+        border-right-width: 1px;
+        background-color: #333;
+        min-width: 200px;
+        z-index: 403;
+        bottom: 0px;
+        top: 100px;
+        left: 0px;
+    }
+
+    #_chat {
+        z-index: 400;
+        right: 0px;
+    }
+
+    #_entrybox {
+        background-color: #333;
+        min-height: 100px;
+        z-index: 402;
+        bottom: 0px;
+        right: 0px;
+    }
+
 </style>
+<div id="_lside">
+    /chat info panel/
+</div>
 <div id="_chat">
+
     User logged in with:
     <br/>
     <pre>§user§</pre>
@@ -12,4 +49,7 @@
     and location:
     <br />
     <pre>§location§</pre>
+</div>
+<div id="_entrybox">
+    /text entry box/
 </div>

@@ -1,8 +1,10 @@
 ﻿using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Drawing.Imaging;
 using System.Net.Sockets;
 using System.Threading;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Net;
@@ -12,8 +14,6 @@ using System;
 using Newtonsoft.Json;
 
 using static ASC.Server.Program;
-using System.Drawing;
-using System.Drawing.Imaging;
 
 namespace ASC.Server
 {
@@ -32,8 +32,13 @@ namespace ASC.Server
     public sealed class HTTPServer
         : IDisposable
     {
-        private readonly HTTPRequestHandler _rfunc;
+        internal const int LOCATION_CACHE_TIME = 1000 * 5 * 60;
+
+        internal static readonly Dictionary<string, GeoIPResult> _loccache = new Dictionary<string, GeoIPResult>();
+        internal static Timer _locuptmr;
+
         private readonly HttpListener _listener = new HttpListener();
+        private readonly HTTPRequestHandler _rfunc;
 
 
         /// <summary>
@@ -159,11 +164,10 @@ namespace ASC.Server
             }
         }
 
-        internal static GeoIPResult GetGeoIPResult(IPEndPoint endpoint)
+        internal static GeoIPResult GetGeoIPResult(IPEndPoint endpoint, bool ignorecache = false)
         {
-            string ip = endpoint.Address.ToString();
+            string ip = endpoint.Address.ToString().ToLower();
             bool isloopback = false;
-            string res;
 
             try
             {
@@ -181,24 +185,45 @@ namespace ASC.Server
 
             ip = isloopback ? "" : ip.ToUpper();
 
+            return GetGeoIPResult(ip, ignorecache);
+        }
+
+        internal static GeoIPResult GetGeoIPResult(string ip, bool ignorecache = false)
+        {
+            string vip = ip.Any() ? ip : LOCALHOST;
+            string res;
+
+            lock (_loccache)
+                if (!ignorecache &&
+                    _loccache.ContainsKey(ip) &&
+                    _loccache[ip] != null &&
+                    _loccache[ip] != GeoIPResult.Default)
+                {
+#if DEBUG
+                    $"Location cache hit for the IP '{vip}'.".Conn();
+#endif
+                    return _loccache[ip];
+                }
+
             using (WebClient wc = new WebClient())
                 try
                 {
-                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{ip}");
+                    res = wc.DownloadString($"https://www.geoip-db.com/jsonp/{ip ?? ""}");
                 }
                 catch
                 {
                     return null;
                 }
 
-            $"Location of '{endpoint}' resloved to '{res.Replace("\r", "").Replace("\n", "")}'.".Conn();
+            $"Location of '{vip}' resloved to '{res.Replace("\r", "").Replace("\n", "")}'.".Conn();
 
-            if (regex(res, @"^callback\s*\((?<content>.+)\)", out m))
+            if (regex(res, @"^callback\s*\((?<content>.+)\)", out Match m))
                 res = m.Groups["content"].ToString();
 
             try
             {
-                return JsonConvert.DeserializeObject<GeoIPResult>(res);
+                lock (_loccache)
+                    return _loccache[ip] = JsonConvert.DeserializeObject<GeoIPResult>(res);
             }
             catch
             {

@@ -17,8 +17,12 @@ $(document).ready(function () {
     session = $.cookie("_sess");
 
     $.cookie("_lang", '§lang_code§');
-    $('#content').css('top', ($('#header').height() + 20) + 'px');
-    $('#content').css('margin-bottom', ($('#footer').height() + 20) + 'px');
+
+    var hheight = $('#header').height();
+
+    $('#_lside, #_chat').css('top', hheight);
+    $('#content').css('top', hheight + 20);
+    $('#content').css('margin-bottom', $('#footer').height() + 20);
 
     if (is_main_page)
         $('#content').css('max-width', '1100px');
@@ -33,7 +37,20 @@ $(document).ready(function () {
         $('#ssl_warning a').attr('href', https_uri + '§url§');
 
     $(window).resize(function () {
-        $('#ssl_warning').css('top', $('#header').height() + 20);
+        var hheight = $('#header').height();
+
+        $('#_lside, #_chat').css('top', hheight);
+        $('#ssl_warning').css('top', hheight + 20);
+    });
+
+    new ResizeSensor($('#main, body'), function () {
+        var loffs = $('#_lside').width;
+
+        $('#_chat, #_entrybox').css('left', loffs);
+        $('#_chat, #_entrybox').width($(window).width() - loffs);
+    });
+    new ResizeSensor($('#_entrybox'), function () {
+        $('#_chat').height($('#main').height() - $('#_entrybox').height());
     });
 
     $('#title').click(function () {

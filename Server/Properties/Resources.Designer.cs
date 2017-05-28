@@ -72,20 +72,33 @@ namespace ASC.Server.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;style&gt;
-        ///&lt;/style&gt;
-        ///&lt;div id=&quot;_chat&quot;&gt;
-        ///    User logged in with:
-        ///    &lt;br/&gt;
-        ///    &lt;pre&gt;§user§&lt;/pre&gt;
-        ///    &lt;br /&gt;
-        ///    and session:
-        ///    &lt;br /&gt;
-        ///    &lt;pre&gt;§user_auth§&lt;/pre&gt;
-        ///    &lt;br /&gt;
-        ///    and location:
-        ///    &lt;br /&gt;
-        ///    &lt;pre&gt;§location§&lt;/pre&gt;
-        ///&lt;/div&gt;.
+        ///    #_chat,
+        ///    #_lside,
+        ///    #_entrybox {
+        ///        border-style: solid;
+        ///        border-color: #999;
+        ///        border-width: 0px;
+        ///        position: fixed;
+        ///        padding: 5px;
+        ///    }
+        ///
+        ///    #_lside {
+        ///        border-right-width: 1px;
+        ///        background-color: #333;
+        ///        min-width: 200px;
+        ///        z-index: 403;
+        ///        bottom: 0px;
+        ///        top: 100px;
+        ///        left: 0px;
+        ///    }
+        ///
+        ///    #_chat {
+        ///        z-index: 400;
+        ///        right: 0px;
+        ///    }
+        ///
+        ///    #_entrybox {
+        ///        background-color [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string chat {
             get {
@@ -231,47 +244,6 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to /*!
-        /// * jQuery Cookie Plugin v1.4.1
-        /// * https://github.com/carhartl/jquery-cookie
-        /// *
-        /// * Copyright 2006, 2014 Klaus Hartl
-        /// * Released under the MIT license
-        /// */
-        ///(function (factory) {
-        ///	if (typeof define === &apos;function&apos; &amp;&amp; define.amd) {
-        ///		// AMD (Register as an anonymous module)
-        ///		define([&apos;jquery&apos;], factory);
-        ///	} else if (typeof exports === &apos;object&apos;) {
-        ///		// Node/CommonJS
-        ///		module.exports = factory(require(&apos;jquery&apos;));
-        ///	} else {
-        ///		// Browser globals
-        ///		factory(jQuery);
-        ///	}
-        ///}(function ($) {
-        ///
-        ///	var pluses = /\+/g;
-        ///
-        ///	funct [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string jquery_cookie {
-            get {
-                return ResourceManager.GetString("jquery_cookie", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to /*! jQuery v3.1.1 | (c) jQuery Foundation | jquery.org/license */
-        ///!function(a,b){&quot;use strict&quot;;&quot;object&quot;==typeof module&amp;&amp;&quot;object&quot;==typeof module.exports?module.exports=a.document?b(a,!0):function(a){if(!a.document)throw new Error(&quot;jQuery requires a window with a document&quot;);return b(a)}:b(a)}(&quot;undefined&quot;!=typeof window?window:this,function(a,b){&quot;use strict&quot;;var c=[],d=a.document,e=Object.getPrototypeOf,f=c.slice,g=c.concat,h=c.push,i=c.indexOf,j={},k=j.toString,l=j.hasOwnProperty,m=l.toString,n=m.call(Object), [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string jquery311min {
-            get {
-                return ResourceManager.GetString("jquery311min", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to &lt;style&gt;
         ///    #_login code {
         ///        /* border: 1px solid #aaa; */
@@ -322,7 +294,8 @@ namespace ASC.Server.Properties {
         ///    session = $.cookie(&quot;_sess&quot;);
         ///
         ///    $.cookie(&quot;_lang&quot;, &apos;§lang_code§&apos;);
-        ///    $(&apos;#content&apos;).cs [rest of string was truncated]&quot;;.
+        ///
+        ///    var hheight =  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string post_script {
             get {
@@ -364,50 +337,25 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to (function () {
-        ///    var b;
-        ///    if (!(b = t)) {
-        ///        var w = Math,
-        ///            y = {}, B = y.p = {}, aa = function () { }, C = B.A = {
-        ///                extend: function (a) {
-        ///                    aa.prototype = this;
-        ///                    var c = new aa;
-        ///                    a &amp;&amp; c.u(a);
-        ///                    c.z = this;
-        ///                    return c
-        ///                },
-        ///                create: function () {
-        ///                    var a = this.extend();
-        ///                    a.h.apply(a, arguments);
-        ///                    r [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string sha512 {
-            get {
-                return ResourceManager.GetString("sha512", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to /* AUTO-GENERATED §time:yyyy-MM-dd HH:mm:ss:ffffff§ */
         ///
         ///@import url(&apos;https://fonts.googleapis.com/css?family=UnifrakturCook:700&apos;);
         ///
         ///
-        ///::-webkit-scrollbar-track {
-        ///    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
-        ///    background-color: rgba(245, 245, 245, 0.21);
+        ///* {
+        ///    -moz-osx-font-smoothing: grayscale !important;
+        ///     -webkit-font-smoothing: antialiased !important;
+        ///
+        ///    text-rendering: optimizeLegibility !important;
+        ///
+        ///    -webkit-text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+        ///       -moz-text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+        ///            text-shadow: 1px 1px 1px rgba(0,0,0,0.04);
+        ///    
+        ///    font-smooth: always;
         ///}
         ///
-        ///::-webkit-scrollbar {
-        ///    /* background-color: #F5F5F5; */
-        ///    border-radius: 10px;
-        ///    width: 10px;
-        ///}
-        ///
-        ///::-webkit-scrollbar-thumb {
-        ///    background-color: #F90;
-        ///    background-image: -webkit-linear-gradient(45deg,
-        ///             [rest of string was truncated]&quot;;.
+        ///:: [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string style {
             get {
@@ -446,21 +394,34 @@ namespace ASC.Server.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;style&gt;
-        ///&lt;/style&gt;
-        ///&lt;div id=&quot;_chat&quot;&gt;
-        ///    User logged in with:
-        ///    &lt;br/&gt;
-        ///    &lt;pre&gt;§user§&lt;/pre&gt;
-        ///    &lt;br /&gt;
-        ///    and session:
-        ///    &lt;br /&gt;
-        ///    &lt;pre&gt;§user_auth§&lt;/pre&gt;
-        ///    &lt;br /&gt;
-        ///    and location:
-        ///    &lt;br /&gt;
-        ///    &lt;pre&gt;§location§&lt;/pre&gt;
-        ///&lt;/div&gt;.
+        ///   Looks up a localized string similar to &lt;!--
+        ///   PARAMETERS:
+        ///        §0 - User GUID
+        ///        §1 - User name
+        ///        §2 - Member since
+        ///        §3 - Status
+        ///--&gt;
+        ///&lt;style&gt;
+        ///    #_userprofile {
+        ///        align-content: center;
+        ///        text-align: center;
+        ///    }
+        ///
+        ///    #_userprofile h1 {
+        ///        font-size: 3em;
+        ///    }
+        ///
+        ///    #_userprofile img {
+        ///        border-radius: 40px;
+        ///        border: 1px solid wheat;
+        ///    }
+        ///
+        ///    #_userprofile i {
+        ///        margin-top: -40px;
+        ///        position: absolute;
+        ///        margin-left: -50%;
+        ///        width: 100%;
+        ///    [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string user {
             get {

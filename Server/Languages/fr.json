@@ -87,6 +87,10 @@
     "locked": "Bloqué",
     "login": "Login with this GUID"
   },
+  "profile": {
+    "status": "Statut",
+    "guid": "GUID"
+  },
   "global": {
     "title": "Plate-forme de chat anti-social",
     "descr": "C&quot;est la plate-forme officielle de chat anti-social",

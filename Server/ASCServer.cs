@@ -363,7 +363,8 @@ namespace ASC.Server
             bool _hasinitlang = false;
 
             response.Headers[HttpResponseHeader.Server] = ServerString;
-            response.Headers[HttpResponseHeader.Connection] = "keep-alive";
+            response.Headers[HttpResponseHeader.Connection] = "keep-alive"; // upgrade
+            // response.Headers[HttpRequestHeader.Upgrade] = "h2c";
 
             Stopwatch sw = new Stopwatch();
 
@@ -757,9 +758,7 @@ namespace ASC.Server
         {
             geoip.Wait();
 
-            GeoIPResult location = geoip.Result;
-
-            vars["location"] = location == null ? "unknown" : $"{location.postal} - {location.city},\n{location.state},\n{location.country_code} - {location.country_name}\n({location.latitude}, {location.longitude})";
+            vars["location"] = geoip.Result?.ToString() ?? "unknown";
         }
 
         private void SetStatusCode(HttpListenerResponse resp, StatusCode code)
@@ -993,6 +992,14 @@ namespace ASC.Server
         /// The state name
         /// </summary>
         public string state { set; get; }
+
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>A string that represents the current object.</returns>
+        public override string ToString() => $"{postal} - {city},\n{state},\n{country_code} - {country_name}\n({latitude}, {longitude})";
+
+        internal string ToShortString() => ToString().Replace('\n', ' ');
     }
 
     /// <summary>
